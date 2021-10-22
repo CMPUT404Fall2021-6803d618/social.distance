@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'authors',
     'drf_spectacular',
     'posts',
+    'nodes',
 ]
 
 REST_FRAMEWORK = {
