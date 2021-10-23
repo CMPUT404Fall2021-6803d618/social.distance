@@ -15,7 +15,7 @@ class PostSerializer(serializers.ModelSerializer):
     count = serializers.IntegerField(source="count_comments", read_only=True)
     published = serializers.DateTimeField(read_only=True)
     author = AuthorSerializer(read_only=True)
-    comments = serializers.URLField(source="build_comments_url")
+    comments = serializers.URLField(source="build_comments_url", read_only=True)
 
     # e.g. 'PUBLIC'
     visibility = serializers.ChoiceField(choices=Post.Visibility.choices)

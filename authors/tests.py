@@ -151,9 +151,10 @@ class AuthorTestCase(TestCase):
     def test_get_author_list(self):
         self.setup_single_user_and_author()
         res = client.get('/authors/', format='json')
-        content = json.loads(res.content)
+        res_content = json.loads(res.content)
+        assert "items" in res_content
+        content = res_content["items"]
 
-        # content should look like [{'id': 'adfsadfasdfasdf', 'displayName': 'test_username', 'url': '', 'host': '', 'user': 1, 'friends': []}]
         assert len(content) == 1
 
         # API fields as per spec, not model fields.
