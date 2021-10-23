@@ -22,6 +22,7 @@ urlpatterns = [
     re_path(r'^(?P<author_id>[^/]*)/followers/(?P<foreign_author_url>.*)$', FollowerDetail.as_view(), name="author-follower-detail"),
 
     # extra internal API for client
-    re_path(r'^(?P<author_id>[^/]*)/friend-request/(?P<foreign_author_url>.*)$',
+    path('<str:author_id>/friend-requests/', internally_get_sent_friend_requests , name="comment-list"),
+    re_path(r'^(?P<author_id>[^/]*)/friend-requests/(?P<foreign_author_url>.*)$',
             internally_send_friend_request, name="friend-request"),
 ]
