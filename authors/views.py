@@ -8,6 +8,8 @@ from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
 
+from authors.pagination import SentFriendRequestPagination
+
 from .serializers import AuthorSerializer, FriendRequestSerializer, InboxObjectSerializer
 from .pagination import AuthorsPagination
 from .models import Author, Follow, FriendRequest, InboxObject
@@ -130,7 +132,7 @@ class InboxListView(APIView):
 
 
 @api_view(['POST'])
-# @permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated])
 def internally_send_friend_request(request, author_id, foreign_author_url):
     """
     the /author/<author_id>/friend_request/<foreign_author_url>/ endpoint
@@ -156,19 +158,51 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     # get that foreign author's json object first
     foreign_author_json = requests.get(foreign_author_url).json()
 
-    # TODO do we check for foreign author validity?
+    # check for foreign author validity
+    foreign_author_ser = AuthorSerializer(data=foreign_author_json)
 
-    friend_request_payload = {
-        'type': 'Follow',
-        # TODO
-        'summary': f"{author.display_name} wants to follow {foreign_author_json.get('displayName')}",
-        'actor': AuthorSerializer(author).data,
-        'object': foreign_author_json,
-    }
-    res = requests.post(foreign_author_url + 'inbox/',
-                        json=friend_request_payload).json()
-    return Response({'debug_foreign_author_url': foreign_author_url, 'debug_author_id': author_id, 'debug_foreign_response': res, 'req': friend_request_payload})
+    if foreign_author_ser.is_valid():
+        foreign_author = foreign_author_ser.upcreate_from_validated_data()
 
+        friend_request = FriendRequest(
+            summary=f"{author.display_name} wants to follow {foreign_author.display_name}",
+            actor=author,
+            object=foreign_author
+        )
+
+        friend_request.save()
+
+        # TODO refactor into notify service
+        friend_request_payload = {
+            'type': 'Follow',
+            'summary': f"{author.display_name} wants to follow {foreign_author_json.get('displayName')}",
+            'actor': AuthorSerializer(author).data,
+            'object': foreign_author_json,
+        }
+        res = requests.post(foreign_author_url + 'inbox/',
+                            json=friend_request_payload).json()
+        return Response({'debug_foreign_author_url': foreign_author_url, 'debug_author_id': author_id, 'debug_foreign_response': res, 'req': friend_request_payload})
+
+    return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def internally_get_sent_friend_requests(request, author_id):
+    """
+    GET /author/<author_id>/friend_request/
+    get all friend requests sent
+    """
+    paginator = SentFriendRequestPagination()
+    try:
+        author = Author.objects.get(id=author_id)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    sent_friend_requests = FriendRequest.objects.filter(actor=author)
+    paginated_instances = paginator.paginate_queryset(sent_friend_requests, request)
+    paginated_data = FriendRequestSerializer(paginated_instances, many=True).data
+
+    return paginator.get_paginated_response(paginated_data)
 
 class FollowerList(ListAPIView):
     # TODO permission_classes = [permissions.IsAuthenticatedOrReadOnly]
