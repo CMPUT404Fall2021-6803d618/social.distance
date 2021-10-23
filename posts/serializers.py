@@ -88,7 +88,13 @@ class LikeSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_author_data = validated_data.pop('author')
-        updated_author = AuthorSerializer._upcreate(validated_author_data)
+        try:
+            if validated_author_data:
+                updated_author = AuthorSerializer._upcreate(validated_author_data)
+            else:
+                updated_author = Author.objects.get(id=self.context.get('author_id'))
+        except:
+            raise exceptions.ValidationError("author does not exist for the post")
         return Like.objects.create(**validated_data, author=updated_author)
 
     class Meta:

@@ -85,6 +85,11 @@ class InboxListView(APIView):
         except:
             raise exceptions.NotFound
 
+        # has to be the current user
+        try:
+            assert author.user == self.request.user
+        except:
+            raise exceptions.PermissionDenied
 
         inbox_objects = author.inbox_objects.all()
         return Response([self.serialize_inbox_item(obj) for obj in inbox_objects])

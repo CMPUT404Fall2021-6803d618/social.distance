@@ -1,9 +1,16 @@
+import functools
+import re
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.query_utils import Q
 
 import requests
 from requests.models import HTTPBasicAuth, Response
 from requests import Request
+from rest_framework import exceptions
+
+from posts.models import Like
+from posts.serializers import LikeSerializer
 
 global_session = requests.Session()
 
@@ -27,23 +34,30 @@ class Node(ConnectionMixin, models.Model):
     username = models.CharField(max_length=200) 
     password = models.CharField(max_length=200) 
 
+# https://stackoverflow.com/a/24025175
+# catch all request error and just print them out instead
+def silent_500(fn):
+    @functools.warps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except requests.exceptions.RequestException as e:
+            print("node connector error: ", e)
+    return wrapper
 
 class ConnectorService:
-    def _do_all(self, path, payload=None, method='GET'):
-        responses = []
-        for node in Node.objects.all():
-            try:
-                call = getattr(global_session, method.lower())
-                res: Response = call(node.host_url + path, json=payload, auth=node.get_basic_auth())
-                responses.append(res.text) 
-            except:
-                responses.append(res.status_code) 
-        return responses
+    @staticmethod
+    def get_inbox_and_host_from_url(url):
+        inbox_url = re.findall(r'(http[s]?:\/\/[^/]+\/)(author\/[^/]+\/)', url)
+        if len(inbox_url) != 1:
+            raise exceptions.APIException(f"cannot match the author endpoint from the url: {url}")
+        host, author_path = inbox_url[0]
+        return host + author_path + 'inbox/', host
+
+    def notify_like(self, like: Like):
+        inbox_url, host_url = self.get_inbox_and_host_from_url(like.object)
+        node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+        res = global_session.post(inbox_url, json=LikeSerializer(like).data, auth=node.get_basic_auth())
+        return res.content
         
-    def get_all(self, path: str, payload: dict = None):
-        return self._do_all(path, payload)
-
-    def post_all(self, path, payload):
-        return self._do_all(path, payload, method='POST')
-
 connector_service = ConnectorService()
