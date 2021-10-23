@@ -13,19 +13,9 @@ from posts.models import Like
 from posts.serializers import LikeSerializer
 
 global_session = requests.Session()
-
-class ConnectionMixin:
-    session = global_session
-    host_url = None
-    username = None
-    password = None
-
-    def get_basic_auth(self):
-        return HTTPBasicAuth(self.username, self.password) 
-    
     
 # Create your models here.
-class Node(ConnectionMixin, models.Model):
+class Node(models.Model):
     host_url = models.URLField()
     # username and password that they use, as a client, to be authenticated in our server
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True) # one2one with django user
@@ -33,6 +23,9 @@ class Node(ConnectionMixin, models.Model):
     # username and password that WE use, as a client, to authenticate on this node/server
     username = models.CharField(max_length=200) 
     password = models.CharField(max_length=200) 
+
+    def get_basic_auth(self):
+        return HTTPBasicAuth(self.username, self.password)
 
 # https://stackoverflow.com/a/24025175
 # catch all request error and just print them out instead

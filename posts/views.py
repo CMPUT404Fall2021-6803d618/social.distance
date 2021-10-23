@@ -276,12 +276,12 @@ class LikedList(APIView):
         NOTE: authenticated as a server node
         """
         try:
-            _ = Author.objects.get(pk=author_id)
+            author = Author.objects.get(id=author_id)
         except:
             error_msg = "Author not found"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
-        likes = Like.objects.filter(author_id=author_id)
+        likes = Like.objects.filter(author=author)
         serializer = LikeSerializer(likes, many=True)
         response = {
             "type": "liked",
@@ -318,7 +318,7 @@ class LikedList(APIView):
 
     def internally_send_like(self, request, author_id):
         try:
-            author = Author.objects.get(id=author_id)
+            _ = Author.objects.get(id=author_id)
         except:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
