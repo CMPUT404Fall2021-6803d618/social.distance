@@ -16,7 +16,7 @@ class PostSerializer(serializers.ModelSerializer):
     id = serializers.CharField(source="get_public_id", read_only=True)
     count = serializers.IntegerField(source="count_comments", read_only=True)
     published = serializers.DateTimeField(read_only=True)
-    author = AuthorSerializer()
+    author = AuthorSerializer(required=False)
 
     # e.g. 'PUBLIC'
     visibility = serializers.ChoiceField(choices=Post.Visibility.choices)
@@ -25,7 +25,13 @@ class PostSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_author_data = validated_data.pop('author')
-        updated_author = AuthorSerializer._upcreate(validated_author_data)
+        try:
+            if validated_author_data:
+                updated_author = AuthorSerializer._upcreate(validated_author_data)
+            else:
+                updated_author = Author.objects.get(id=self.context.get('author_id'))
+        except:
+            raise exceptions.ValidationError("author does not exist for the post")
         return Post.objects.create(**validated_data, author=updated_author)
 
     # TODO: missing the following fields

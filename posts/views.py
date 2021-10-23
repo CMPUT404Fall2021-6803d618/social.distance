@@ -43,7 +43,7 @@ class PostDetail(APIView):
             post = Post.objects.get(pk=post_id)
         except Post.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        
+
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
             post = serializer.save()
@@ -51,7 +51,7 @@ class PostDetail(APIView):
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     """
     Delete the post
     """
@@ -175,7 +175,7 @@ class CommentList(ListCreateAPIView):
             comment_author_serializer = AuthorSerializer(data=comment_author_json)
             if not comment_author_serializer.is_valid():
                 return Response(comment_author_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            comment_author = comment_author_serializer.upcreate_from_validated_data()
+            comment_author = comment_author_serializer.save()
 
         comment_serializer = CommentSerializer(data=request.data)
         if comment_serializer.is_valid():
