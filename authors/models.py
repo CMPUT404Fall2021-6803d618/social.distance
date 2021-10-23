@@ -23,7 +23,10 @@ class Author(models.Model):
     # followers: Authors, added by related name, see AuthorFollowingRelation
 
     def __str__(self):
-        display_name = self.display_name or self.user.username
+        if self.user:
+            display_name = self.display_name or self.user.username
+        else:
+            display_name = self.display_name
         return display_name + " (" + str(self.id) + ")"
     
     def is_internal(self):
@@ -36,6 +39,10 @@ class Author(models.Model):
     # used by serializer
     def get_public_id(self):
         return self.url or self.id
+
+    @staticmethod
+    def get_api_type():
+        return 'author'
 
     # used internally
     def get_absolute_url(self):
@@ -87,6 +94,10 @@ class FriendRequest(models.Model):
     actor = models.ForeignKey("Author", related_name="friend_requests_sent", on_delete=models.CASCADE)
     # author who is receiving the request
     object = models.ForeignKey("Author", related_name="friend_requests_received", on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_api_type():
+        return 'Follow'
 
 
 class InboxObject(models.Model):
