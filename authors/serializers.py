@@ -46,7 +46,7 @@ class AuthorSerializer(serializers.ModelSerializer):
             raise exceptions.ParseError("data not valid")
         try:
             updated_author = self.update(Author.objects.get(
-                id=self.validated_data['id']), self.validated_data)
+                Q(id=self.validated_data['id']) | Q(url=self.validated_data['url'])), self.validated_data)
         except:
             updated_author = Author.objects.create(
                 **self.validated_data)
