@@ -3,10 +3,11 @@ from rest_framework.response import Response
 
 class PageSizePagination(PageNumberPagination):
     page_size_query_param = 'size' # use query param 'size'
+    key = 'items'
+    type = 'objects'
 
     def __init__(self):
         super().__init__()
-        self.key = 'items'
 
     def get_paginated_response(self, data):
         response = {}
@@ -19,3 +20,23 @@ class PageSizePagination(PageNumberPagination):
             self.key: data
         })
         return Response(response) 
+
+    def get_paginated_response_schema(self, schema):
+        return {
+            'type': 'object',
+            'properties': {
+                'type': {
+                    'type': 'string',
+                    'example': 'objects'
+                },
+                'page': {
+                    'type': 'integer',
+                    'example': 123,
+                },
+                'size': {
+                    'type': 'integer',
+                    'example': 123,
+                },
+                self.key: schema,
+            },
+        }
