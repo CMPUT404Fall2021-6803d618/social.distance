@@ -144,6 +144,10 @@ class CommentList(ListCreateAPIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
  
         response = super().list(request, *args, **kwargs)
+        # '?' excludes query parameter
+        request_url = request.build_absolute_uri('?')
+        response.data["id"] = request_url
+        response.data["post"] = request_url.replace("comments/", "")
         return response
 
     """
