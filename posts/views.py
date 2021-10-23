@@ -56,6 +56,7 @@ class PostDetail(APIView):
         if serializer.is_valid():
             post = serializer.save()
             post.update_fields_with_request(request)
+            connector_service.notify_post(post) # TODO should we notify on update post?
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -97,6 +98,7 @@ class PostDetail(APIView):
                 **serializer.validated_data
             )
             post.update_fields_with_request(request)
+            connector_service.notify_post(post)
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

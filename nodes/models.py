@@ -8,9 +8,10 @@ import requests
 from requests.models import HTTPBasicAuth, Response
 from requests import Request
 from rest_framework import exceptions
+from authors.models import Author
 
-from posts.models import Like
-from posts.serializers import LikeSerializer
+from posts.models import Like, Post
+from posts.serializers import LikeSerializer, PostSerializer
 
 global_session = requests.Session()
     
@@ -41,16 +42,32 @@ def silent_500(fn):
 class ConnectorService:
     @staticmethod
     def get_inbox_and_host_from_url(url):
-        inbox_url = re.findall(r'(http[s]?:\/\/[^/]+\/)(author\/[^/]+\/)', url)
-        if len(inbox_url) != 1:
+        url_results = re.findall(r'(http[s]?:\/\/[^/]+\/)(author\/[^/]+\/)', url)
+        if len(url_results) != 1:
             raise exceptions.APIException(f"cannot match the author endpoint from the url: {url}")
-        host, author_path = inbox_url[0]
+        host, author_path = url_results[0]
         return host + author_path + 'inbox/', host
 
+    @silent_500
     def notify_like(self, like: Like):
         inbox_url, host_url = self.get_inbox_and_host_from_url(like.object)
         node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
         res = global_session.post(inbox_url, json=LikeSerializer(like).data, auth=node.get_basic_auth())
         return res.content
+
+    @silent_500
+    def notify_post(self, post: Post):
+        # get all follwers and their endpoints
+        followers = Author.objects.filter(followings__followee=post.author)
+
+        results = []
+        # post the post to each of the followers' inboxes
+        for follower in followers:
+            inbox_url, host_url = self.get_inbox_and_host_from_url(follower.url)
+            node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+            res = global_session.post(inbox_url, json=PostSerializer(post).data, auth=node.get_basic_auth())
+            results.append(res.content)
+        return results
+
         
 connector_service = ConnectorService()
