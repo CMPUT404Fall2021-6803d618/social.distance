@@ -79,7 +79,7 @@ class InboxListView(APIView):
     POST to inbox: a foreign server sends some json object to the inbox. server basic auth required
     GET from inbox: get all objects for the current user. user jwt auth required
     """
-    # permission_classes = [permissions.permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, author_id):
         try:
@@ -205,7 +205,7 @@ def internally_get_sent_friend_requests(request, author_id):
     return paginator.get_paginated_response(paginated_data)
 
 class FollowerList(ListAPIView):
-    # TODO permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     """
     get a list of authors who are their followers
     """
@@ -225,7 +225,7 @@ class FollowerList(ListAPIView):
 
 
 class FollowerDetail(APIView):
-    # TODO permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     @extend_schema(
         responses=AuthorSerializer(),

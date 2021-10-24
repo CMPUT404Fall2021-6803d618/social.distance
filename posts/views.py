@@ -16,6 +16,8 @@ import uuid
 import copy
 
 class PostDetail(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     def get_serializer_class(self):
         return PostSerializer
 
@@ -92,6 +94,7 @@ class PostDetail(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class PostList(ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     serializer_class = PostSerializer
     pagination_class = PostsPagination
 
@@ -123,6 +126,7 @@ class PostList(ListCreateAPIView):
         return PostDetail().put(request, author_id, post_id)
 
 class CommentList(ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     serializer_class = CommentSerializer
     pagination_class = CommentsPagination
 
@@ -210,7 +214,7 @@ class CommentDetail(APIView):
         return Response(serializer.data)
 
 class LikesPostList(APIView):
-
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     """
     get a list of likes to author_id's post post_id
     """
@@ -230,7 +234,8 @@ class LikesPostList(APIView):
         return Response(serializer.data)
 
 class LikesCommentList(APIView):
-    
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     """
     get a list of likes to author_id's post post_id comment comment_id
     """
