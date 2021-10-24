@@ -118,15 +118,15 @@ class PostDetailTestCase(TestCase):
             put_data,
             format='json'
         )
-        assert res.status_code == 204
+        assert res.status_code == 200
+        new_post = json.loads(res.content)
 
-        new_post = Post.objects.get(pk=new_post_id)
-        assert new_post.title == put_data["title"]
-        assert new_post.description == put_data["description"]
-        assert new_post.content_type == put_data["contentType"]
-        assert new_post.content == put_data["content"]
-        assert new_post.visibility == put_data["visibility"]
-        assert new_post.unlisted == True
+        assert new_post["title"] == put_data["title"]
+        assert new_post["description"] == put_data["description"]
+        assert new_post["contentType"] == put_data["contentType"]
+        assert new_post["content"] == put_data["content"]
+        assert new_post["visibility"] == put_data["visibility"]
+        assert new_post["unlisted"] == True
     
     def test_put_post_conflict(self):
         self.setup_objects()

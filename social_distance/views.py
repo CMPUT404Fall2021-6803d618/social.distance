@@ -25,6 +25,13 @@ def api_root(request, format=None):
 )
 @api_view(['POST'])
 def register(request):
+    """
+    ## Description:  
+    Registering a new account  
+    ## Responses:  
+    **200**: if the account is successfully registered <br>  
+    **400**: if the payload failed the serializer check
+    """
     # deserialize request data
     serializer = RegisterSerializer(
         data=request.data, context={'request': request})
@@ -41,8 +48,11 @@ def register(request):
 @api_view(['POST'])
 def token_refresh(request):
     """
-    grab the refresh token, try authenticate and get user, 
-    returns useful user data, and access_token
+    ## Description:  
+    grab the refresh token, try authenticate and get user  
+    ## Responses:  
+    **200**: for successful POST request, returns useful user data, and access_token <br>
+    **400**: if the payload does not contain the refresh token
     """
     if not request.data.get('refresh'):
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -58,6 +68,15 @@ def token_refresh(request):
 )
 @api_view(['POST'])
 def login(request):
+    """
+    ## Description:  
+    login with username and password  
+    ## Responses:  
+    **200**: for successful POST request, returns user data <br>
+    **400**: if the payload failed the serializer check <br>
+    **401**: if the user cannot be authenticated <br>
+    **403**: if the user is not currently active
+    """
     serializer = CommonAuthenticateSerializer(data=request.data)
     if serializer.is_valid():
         data = serializer.validated_data
