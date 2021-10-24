@@ -6,7 +6,7 @@ from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.contrib.auth.models import User
-from authors.models import Author
+from authors.models import Author, Follow
 from authors.serializers import AuthorSerializer, FollowSerializer
 from authors.views import InboxListView
 
@@ -79,6 +79,8 @@ class FollowTestCase(TestCase):
         inbox_items = new_client.get(
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', format='json')
         assert len(inbox_items.data) == 1
+        status = inbox_items.data[0].pop('status')
+        self.assertEqual(status, Follow.FollowStatus.PENDING)
         self.assertDictEqual(inbox_items.data[0], self.DATA)
 
         local_author = Author.objects.get(

@@ -76,6 +76,7 @@ class FollowSerializer(serializers.ModelSerializer):
     """
     type = serializers.CharField(default='Follow', read_only=True)
     summary = serializers.CharField()
+    status = serializers.ChoiceField(required=False, read_only=True, choices=Follow.FollowStatus.choices)
     actor = AuthorSerializer()
     object = AuthorSerializer()
 
@@ -99,7 +100,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follow
-        fields = ['summary', 'actor', 'object', 'type']
+        fields = ['summary', 'actor', 'object', 'type', 'status']
 
 
 class InboxObjectSerializer(serializers.ModelSerializer):

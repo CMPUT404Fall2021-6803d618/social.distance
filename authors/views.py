@@ -1,5 +1,6 @@
 from drf_spectacular.types import OpenApiTypes
 import requests
+from requests.models import HTTPBasicAuth
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, ListCreateAPIView, get_object_or_404
 from rest_framework.response import Response
@@ -131,7 +132,7 @@ class InboxListView(APIView):
         return serializer(data=data, context=context)
 
 
-@api_view(['POST'])
+@api_view(['PUT'])
 @permission_classes([permissions.IsAuthenticated])
 def internally_send_friend_request(request, author_id, foreign_author_url):
     """
@@ -158,18 +159,22 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     if foreign_author_ser.is_valid():
         foreign_author = foreign_author_ser.upcreate_from_validated_data()
 
-        friend_request = Follow(
+        if Follow.objects.filter(actor=author, object=foreign_author):
+            raise exceptions.PermissionDenied("duplicate follow object exists for the authors")
+
+        follow = Follow(
             summary=f"{author.display_name} wants to follow {foreign_author.display_name}",
             actor=author,
             object=foreign_author
         )
 
-        friend_request.save()
+        follow.save()
 
-        # TODO refactor into notify service
+        follow_ser = FollowSerializer(follow)
+        # TODO refactor into notify service, server auth
         res = requests.post(foreign_author_url + 'inbox/',
-                            json=FollowSerializer(friend_request).data).json()
-        return Response({'debug_foreign_author_url': foreign_author_url, 'debug_author_id': author_id, 'debug_foreign_response': res, 'req': friend_request_payload})
+                            json=follow_ser.data).json()
+        return Response(follow_ser.data)
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -316,3 +321,15 @@ class FollowerDetail(APIView):
             res = requests.get(foreign_author_url)
             follower_serializer = AuthorSerializer(data=res.text)
         return follower_serializer
+
+class FollowingList(ListAPIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    serializer_class = FollowSerializer
+
+    def get_queryset(self):
+        try:
+            author = Author.objects.get(id=self.kwargs.get('author_id'))
+        except Author.DoesNotExist:
+            raise exceptions.NotFound
+ 
+        return author.followings.all()
