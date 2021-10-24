@@ -6,6 +6,7 @@ from django.db.utils import IntegrityError
 
 from django.contrib.auth.models import User
 from authors.models import Author
+from authors.tests import client_with_auth
 from posts.models import Post, Comment, Like
 
 # Create your tests here.
@@ -14,7 +15,7 @@ client = APIClient() # the mock http client
 class PostDetailTestCase(TestCase):
     def setup_objects(self):
         self.user = User.objects.create_superuser('test_username', 'test_email', 'test_pass')
-        client.force_login(self.user)
+        self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(user=self.user, display_name=self.user.username)
         self.post = Post.objects.create(
             author = self.author,
@@ -27,7 +28,7 @@ class PostDetailTestCase(TestCase):
         
     def test_get_post_normal(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
         content = json.loads(res.content)
     
         assert res.status_code == 200
@@ -41,14 +42,14 @@ class PostDetailTestCase(TestCase):
 
     def test_get_post_not_exist(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/this-id-does-not-exist/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/this-id-does-not-exist/', format='json')
         assert res.status_code == 404
     
     def test_get_post_private(self):
         self.setup_objects()
         self.post.visibility = "PRIVATE"
         self.post.save()
-        res = client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
         assert res.status_code == 403
 
     def test_update_post_normal(self):
@@ -58,7 +59,7 @@ class PostDetailTestCase(TestCase):
             'description': 'updated_description',
             'contentType': 'text/markdown'
         }
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/{self.post.id}/', 
             update_data,
             format='json'
@@ -71,7 +72,7 @@ class PostDetailTestCase(TestCase):
 
     def test_update_post_not_exist(self):
         self.setup_objects()
-        res = client.post(f'/author/{self.author.id}/posts/this-id-does-not-exist/', format='json')
+        res = self.client.post(f'/author/{self.author.id}/posts/this-id-does-not-exist/', format='json')
         assert res.status_code == 404
     
     def test_update_post_invalid_entry(self):
@@ -80,7 +81,7 @@ class PostDetailTestCase(TestCase):
             # this content type is invalid
             'contentType': 'text/html'
         }
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/{self.post.id}/', 
             update_data,
             format='json'
@@ -189,7 +190,7 @@ class PostDetailTestCase(TestCase):
 class PostListTestCase(TestCase):
     def setup_objects(self):
         self.user = User.objects.create_superuser('test_username', 'test_email', 'test_pass')
-        client.force_login(self.user)
+        self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(user=self.user, display_name=self.user.username)
         self.post1 = Post.objects.create(
             author = self.author,
@@ -210,7 +211,7 @@ class PostListTestCase(TestCase):
     
     def test_get_posts_normal(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/', format='json')
         content = json.loads(res.content)
         assert res.status_code == 200
         assert ("items" in content)
@@ -218,13 +219,13 @@ class PostListTestCase(TestCase):
 
     def test_get_posts_invalid_author(self):
         self.setup_objects()
-        res = client.get(f'/author/does-not-exist/posts/', format='json')
+        res = self.client.get(f'/author/does-not-exist/posts/', format='json')
         assert res.status_code == 404
 
 class CommentListTestCase(TestCase):
     def setup_objects(self):
         self.user = User.objects.create_superuser('test_username', 'test_email', 'test_pass')
-        client.force_login(self.user)
+        self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(user=self.user, display_name=self.user.username)
         self.post = Post.objects.create(
             author = self.author,
@@ -261,7 +262,7 @@ class CommentListTestCase(TestCase):
     
     def test_get_comment_normal(self):
         self.setup_objects()
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/posts/{self.post.id}/comment/{self.comment1.id}/', 
             format='json'
         )
@@ -272,7 +273,7 @@ class CommentListTestCase(TestCase):
 
     def test_get_comment_not_found(self):
         self.setup_objects()
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/posts/{self.post.id}/comment/not-found/', 
             format='json'
         )
@@ -280,7 +281,7 @@ class CommentListTestCase(TestCase):
     
     def test_get_comments_normal(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/', format='json')
         content = json.loads(res.content)
         assert res.status_code == 200
         assert ("comments" in content)
@@ -288,7 +289,7 @@ class CommentListTestCase(TestCase):
 
     def test_get_comments_paginated_normal(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/?page=1&size=1', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/?page=1&size=1', format='json')
         content = json.loads(res.content)
         assert res.status_code == 200
         assert ("comments" in content)
@@ -297,18 +298,18 @@ class CommentListTestCase(TestCase):
     def test_get_comments_paginated_404(self):
         self.setup_objects()
         # we only have 2 comments, page 3 size 1 should return 404
-        res = client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/?page=3&size=1', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/comments/?page=3&size=1', format='json')
         assert res.status_code == 404
 
     def test_get_comments_invalid_post(self):
         self.setup_objects()
-        res = client.get(f'/author/{self.author.id}/posts/does-not-exist/comments/', format='json')
+        res = self.client.get(f'/author/{self.author.id}/posts/does-not-exist/comments/', format='json')
         assert res.status_code == 404
 
     def test_post_comments_normal(self):
         self.setup_objects()
         
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/{self.post.id}/comments/',
             self.payload,
             format="json"
@@ -320,7 +321,7 @@ class CommentListTestCase(TestCase):
         self.setup_objects()
 
         # invalid post id 
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/does-not-exist/comments/',
             self.payload,
             format="json"
@@ -328,7 +329,7 @@ class CommentListTestCase(TestCase):
         assert res.status_code == 404
 
         # invalid author id 
-        res = client.post(
+        res = self.client.post(
             f'/author/does-not-exist/posts/{self.post.id}/comments/',
             self.payload,
             format="json"
@@ -340,7 +341,7 @@ class CommentListTestCase(TestCase):
         self.setup_objects()
         self.payload["author"].pop("id")
 
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/{self.post.id}/comments/',
             self.payload,
             format="json"
@@ -351,7 +352,7 @@ class CommentListTestCase(TestCase):
         self.setup_objects()
         self.payload["author"]["id"] = self.payload["author"]["url"]
 
-        res = client.post(
+        res = self.client.post(
             f'/author/{self.author.id}/posts/{self.post.id}/comments/',
             self.payload,
             format="json"
@@ -364,7 +365,7 @@ class LikeTestCase(TestCase):
     def setup_objects(self):
         self.user = User.objects.create_superuser('test_username', 'test_email', 'test_pass')
         self.user2 = User.objects.create_superuser('test_username2', 'test_email2', 'test_pass2')
-        client.force_login(self.user)
+        self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(user=self.user, display_name=self.user.username)
         self.author2 = Author.objects.create(user=self.user2, display_name=self.user2.username)
         self.post = Post.objects.create(
@@ -399,7 +400,7 @@ class LikeTestCase(TestCase):
         self.setup_objects()
         self.setup_likes(self.post.url)
 
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/post/{self.post.id}/likes/',
             format="json"
         )
@@ -412,7 +413,7 @@ class LikeTestCase(TestCase):
         self.setup_objects()
         self.setup_likes(self.post.url)
 
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/post/does-not-exist/likes/',
             format="json"
         )
@@ -422,7 +423,7 @@ class LikeTestCase(TestCase):
         self.setup_objects()
         self.setup_likes(self.comment.url)
 
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/post/{self.post.id}/comments/{self.comment.id}/likes/',
             format="json"
         )
@@ -435,7 +436,7 @@ class LikeTestCase(TestCase):
         self.setup_objects()
         self.setup_likes(self.comment.url)
 
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/post/{self.post.id}/comments/does-not-exist/likes/',
             format="json"
         )
@@ -444,7 +445,7 @@ class LikeTestCase(TestCase):
     def test_liked_normal(self):
         self.setup_objects()
         self.setup_likes(self.post.url)
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author.id}/liked/',
             format="json"
         )
@@ -454,7 +455,7 @@ class LikeTestCase(TestCase):
         assert len(content["items"]) == 1
         assert content["items"][0]["object"] == self.like1.object
 
-        res = client.get(
+        res = self.client.get(
             f'/author/{self.author2.id}/liked/',
             format="json"
         )
@@ -468,7 +469,7 @@ class LikeTestCase(TestCase):
         self.setup_objects()
         self.setup_likes(self.post.url)
 
-        res = client.get(
+        res = self.client.get(
             f'/author/does-not-exist/liked/',
             format="json"
         )
