@@ -16,6 +16,19 @@ from .pagination import CommentsPagination, PostsPagination
 import uuid
 import copy
 
+def get_author_and_post(author_id, post_id):
+    try:
+        author = Author.objects.get(pk=author_id)
+        post = Post.objects.get(pk=post_id)
+        if (post.author.id != author.id):
+            error_msg = "this author is not the post's poster"
+            return (Response(error_msg, status=status.HTTP_403_FORBIDDEN), None, None)
+    except (Author.DoesNotExist, Post.DoesNotExist):
+        error_msg = "Author or Post id does not exist"
+        return (Response(error_msg, status=status.HTTP_404_NOT_FOUND), None, None)
+
+    return (Response(), author, post)
+
 class PostDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
@@ -28,18 +41,13 @@ class PostDetail(APIView):
         Get author post with the post_id  
         ## Responses:  
         **200**: for successful GET request, see below for example response schema  
-        **403**: if author and post ids are valid, but post's poster is not the author   
+        **403**: if author and post ids are valid, but post's poster is not the author 
+                 OR if the post is not public     
         **404**: is either author or post id is not found 
         """
-        try:
-            author = Author.objects.get(pk=author_id)
-            post = Post.objects.get(pk=post_id)
-            if (post.author.id != author.id):
-                error_msg = "this author is not the post's poster"
-                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
-        except (Author.DoesNotExist, Post.DoesNotExist):
-            error_msg = "Author or Post id does not exist"
-            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
+        get_response, _, post = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
         
         # TODO: what if the author itself want to get friends/private posts?
         if (post.visibility != Post.Visibility.PUBLIC):
@@ -58,15 +66,9 @@ class PostDetail(APIView):
         **403**: if author and post ids are valid, but post's poster is not the author   
         **404**: if either author or post is not found
         """
-        try:
-            author = Author.objects.get(pk=author_id)
-            post = Post.objects.get(pk=post_id)
-            if (post.author.id != author.id):
-                error_msg = "this author is not the post's poster"
-                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
-        except (Author.DoesNotExist, Post.DoesNotExist):
-            error_msg = "Author or Post id does not exist"
-            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
+        get_response, _, post = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
         
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
@@ -85,15 +87,9 @@ class PostDetail(APIView):
         **403**: if author and post ids are valid, but post's poster is not the author  
         **404**: if either author or post is not found
         """
-        try:
-            author = Author.objects.get(pk=author_id)
-            post = Post.objects.get(pk=post_id)
-            if (post.author.id != author.id):
-                error_msg = "this author is not the post's poster"
-                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
-        except (Author.DoesNotExist, Post.DoesNotExist):
-            error_msg = "Author or Post id does not exist"
-            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
+        get_response, _, post = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
         
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -186,16 +182,22 @@ class CommentList(ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        get comments of the post (paginated)
+        ## Description:  
+        Get comments of the post (paginated)  
+        ## Responses:  
+        **200**: for successful GET request  
+        **403**: if author and post ids are valid, but post's poster is not the author  
+        **404**: if either author or post is not found 
         """
-        try:
-            post_id = kwargs.get("post_id")
-            _ = Post.objects.get(pk=post_id)
-            self.comments = Comment.objects.filter(
-                post_id=post_id
-            ).order_by('-published')    
-        except (KeyError, Post.DoesNotExist):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+        author_id = kwargs.get("author_id")
+        post_id = kwargs.get("post_id")
+        get_response, _, _ = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
+       
+        self.comments = Comment.objects.filter(
+            post_id=post_id
+        ).order_by('-published')    
  
         response = super().list(request, *args, **kwargs)
         # '?' excludes query parameter
@@ -206,7 +208,12 @@ class CommentList(ListCreateAPIView):
 
     def post(self, request, author_id, post_id):
         """
-        add a comment to the author_id's post post_id
+        ## Description:  
+        Add a comment to the author_id's post post_id    
+        ## Responses:  
+        **204**: for successful POST request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author or post id does not exist  
         """
         # check if the post and post's author exist
         try:
@@ -253,12 +260,25 @@ class CommentDetail(APIView):
 
     def get(self, request, author_id, post_id, comment_id):
         """
-        get the comment with the specific post and author
+        ## Description:  
+        Get the comment with the specific post and author  
+        ## Responses:  
+        **200**: for successful GET request  
+        **403**: if post's poster is not author, or comment belongs to another post  
+        **404**: if either author, post, or comment does not exist
         """
+        get_response, _, post = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
+    
         try:
             comment = Comment.objects.get(pk=comment_id)
+            if comment.post.id != post.id:
+                error_msg = "the comment id is not related to the post id"
+                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
         except:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            error_msg = "Comment id is not valid"
+            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
     
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
@@ -271,7 +291,11 @@ class LikesPostList(APIView):
     )
     def get(self, request, author_id, post_id):
         """
-        get a list of likes to author_id's post post_id
+        ## Description:  
+        Get a list of likes to author_id's post post_id  
+        ## Responses:  
+        **200**: for successful GET request  
+        **404**: if author or post does not exist
         """
         try:
             _ = Author.objects.get(pk=author_id)
@@ -292,14 +316,24 @@ class LikesCommentList(APIView):
     )
     def get(self, request, author_id, post_id, comment_id):
         """
-        get a list of likes to author_id's post post_id comment comment_id
+        ## Description:  
+        Get a list of likes to author_id's post post_id comment comment_id  
+        ## Responses:  
+        **200**: for successful GET request  
+        **403**: if post's poster is not author, or comment belongs to another post  
+        **404**: if either author, post, or comment does not exist
         """
+        get_response, _, post = get_author_and_post(author_id, post_id)
+        if get_response.status_code != 200:
+            return get_response
+    
         try:
-            _ = Author.objects.get(pk=author_id)
-            _ = Post.objects.get(pk=post_id)
             comment = Comment.objects.get(pk=comment_id)
+            if comment.post.id != post.id:
+                error_msg = "the comment id is not related to the post id"
+                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
         except:
-            error_msg = "Author, Post, or Comment id not found"
+            error_msg = "Comment id is not valid"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
         
         likes = Like.objects.filter(object=comment.url)
@@ -310,7 +344,11 @@ class LikedList(APIView):
     
     def get(self, request, author_id):
         """
-        get a list of likes orginating from author author_id
+        ## Description:  
+        Get a list of likes orginating from author author_id  
+        ## Responses:  
+        **200**: for sucessful GET request  
+        **404**: if the author id does not exist
         """
         try:
             _ = Author.objects.get(pk=author_id)
