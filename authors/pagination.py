@@ -3,5 +3,5 @@ from social_distance.pagination import PageSizePagination
 class AuthorsPagination(PageSizePagination):
     type = 'authors'
 
-class SentFriendRequestPagination(PageSizePagination):
+class FollowingsPagination(PageSizePagination):
     type = 'followings'

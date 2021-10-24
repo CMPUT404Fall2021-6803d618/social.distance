@@ -8,11 +8,11 @@ from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
 
-from authors.pagination import SentFriendRequestPagination
+from authors.pagination import FollowingsPagination
 
-from .serializers import AuthorSerializer, FriendRequestSerializer, InboxObjectSerializer
+from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import AuthorsPagination
-from .models import Author, Follow, FriendRequest, InboxObject
+from .models import Author, Follow, Follow, InboxObject
 
 # https://www.django-rest-framework.org/tutorial/3-class-based-views/
 
@@ -115,8 +115,8 @@ class InboxListView(APIView):
 
     def serialize_inbox_item(self, item, context={}):
         model_class = item.content_type.model_class()
-        if model_class is FriendRequest:
-            serializer = FriendRequestSerializer
+        if model_class is Follow:
+            serializer = FollowSerializer
         # TODO post, like
         return serializer(item.content_object, context=context).data
 
@@ -125,7 +125,7 @@ class InboxListView(APIView):
             raise exceptions.ParseError
         type = data.get('type')
         if type == 'Follow':
-            serializer = FriendRequestSerializer
+            serializer = FollowSerializer
         # TODO post, like
 
         return serializer(data=data, context=context)
@@ -140,13 +140,7 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     - foreign_author_url: anything, but we hope it's a valid url.
 
     used only by local users, jwt authentication required.
-    Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
-
-    NOTE: I think putting url inside a url sucks, too. -Lucas
-
-    questions:
-    - what to expect from POST result?
-    - How do we know the friend request has been accepted?
+    Its job is to fire a POST to the foreign author's inbox with a Follow json object.
     """
     import requests
 
@@ -164,7 +158,7 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     if foreign_author_ser.is_valid():
         foreign_author = foreign_author_ser.upcreate_from_validated_data()
 
-        friend_request = FriendRequest(
+        friend_request = Follow(
             summary=f"{author.display_name} wants to follow {foreign_author.display_name}",
             actor=author,
             object=foreign_author
@@ -173,14 +167,8 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
         friend_request.save()
 
         # TODO refactor into notify service
-        friend_request_payload = {
-            'type': 'Follow',
-            'summary': f"{author.display_name} wants to follow {foreign_author_json.get('displayName')}",
-            'actor': AuthorSerializer(author).data,
-            'object': foreign_author_json,
-        }
         res = requests.post(foreign_author_url + 'inbox/',
-                            json=friend_request_payload).json()
+                            json=FollowSerializer(friend_request).data).json()
         return Response({'debug_foreign_author_url': foreign_author_url, 'debug_author_id': author_id, 'debug_foreign_response': res, 'req': friend_request_payload})
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -192,15 +180,15 @@ def internally_get_sent_friend_requests(request, author_id):
     GET /author/<author_id>/friend_request/
     get all friend requests sent
     """
-    paginator = SentFriendRequestPagination()
+    paginator = FollowingsPagination()
     try:
         author = Author.objects.get(id=author_id)
     except:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    sent_friend_requests = FriendRequest.objects.filter(actor=author)
+    sent_friend_requests = Follow.objects.filter(actor=author)
     paginated_instances = paginator.paginate_queryset(sent_friend_requests, request)
-    paginated_data = FriendRequestSerializer(paginated_instances, many=True).data
+    paginated_data = FollowSerializer(paginated_instances, many=True).data
 
     return paginator.get_paginated_response(paginated_data)
 
@@ -221,7 +209,7 @@ class FollowerList(ListAPIView):
         except:
             raise exceptions.NotFound
         # find all author following this author
-        return Author.objects.filter(followings__followee=author)
+        return Author.objects.filter(followings__object=author)
 
 
 class FollowerDetail(APIView):
@@ -241,7 +229,7 @@ class FollowerDetail(APIView):
             raise exceptions.NotFound
         return Response(AuthorSerializer(get_object_or_404(
             Author,
-            followings__followee=author,  # all author following the author
+            followings__object=author,  # all author following the author
             url=foreign_author_url  # AND whose url matches param
         )).data)
 
@@ -258,7 +246,7 @@ class FollowerDetail(APIView):
         try:
             # the following object for this relationship
             follower_following = author.followers.get(
-                follower__url=foreign_author_url)
+                actor__url=foreign_author_url)
         except:
             raise exceptions.NotFound(
                 f"foreign author at {foreign_author_url} is not a follower of the local author")
@@ -314,9 +302,9 @@ class FollowerDetail(APIView):
                 return Response(follower_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # create the Follow object for this relationship, if not exist already
-        if not Follow.objects.filter(followee=author, follower=follower):
+        if not Follow.objects.filter(object=author, actor=follower):
             follower_following = Follow.objects.create(
-                followee=author, follower=follower)
+                object=author, actor=follower)
         return Response()
 
     def get_follower_serializer_from_request(self, request, foreign_author_url):
