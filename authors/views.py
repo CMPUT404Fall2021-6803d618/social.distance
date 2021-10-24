@@ -4,33 +4,36 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, ListCreateAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework import exceptions, status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
 
 from authors.pagination import SentFriendRequestPagination
 
 from .serializers import AuthorSerializer, FriendRequestSerializer, InboxObjectSerializer
-
+from .pagination import AuthorsPagination
 from .models import Author, Follow, FriendRequest, InboxObject
-# Create your views here.
 
 # https://www.django-rest-framework.org/tutorial/3-class-based-views/
 
 
-class AuthorList(APIView):
+class AuthorList(ListAPIView):
+    serializer_class = AuthorSerializer
+    pagination_class = AuthorsPagination
+
+    # used by the ListCreateAPIView super class 
+    def get_queryset(self):
+        return Author.objects.all()
+
     """
     List all authors in this server.
     """
     @extend_schema(
         # specify response format for list: https://drf-spectacular.readthedocs.io/en/latest/faq.html?highlight=list#i-m-using-action-detail-false-but-the-response-schema-is-not-a-list
-        responses=AuthorSerializer(many=True),
+        responses=AuthorSerializer(many=True)
     )
-    def get(self, request):
-        authors = Author.objects.all()
-        serializer = AuthorSerializer(authors, many=True)
-        return Response(serializer.data)
-
+    def get(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
 class AuthorDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
