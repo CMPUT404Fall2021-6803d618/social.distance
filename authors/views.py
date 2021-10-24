@@ -86,7 +86,7 @@ class AuthorDetail(APIView):
 
 
 class InboxListView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, author_id):
         """
@@ -154,7 +154,10 @@ class InboxListView(APIView):
         return serializer(data=data, context=context)
 
 
-@api_view(['PUT'])
+@extend_schema(
+    responses=FollowSerializer
+)
+@api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def internally_send_friend_request(request, author_id, foreign_author_url):
     """
@@ -200,26 +203,6 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
         return Response(follow_ser.data)
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-@api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
-def internally_get_sent_friend_requests(request, author_id):
-    """
-    **[Internal]** <br>
-    GET /author/<author_id>/friend_request/  
-    get all friend requests sent
-    """
-    paginator = FollowingsPagination()
-    try:
-        author = Author.objects.get(id=author_id)
-    except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    sent_friend_requests = Follow.objects.filter(actor=author)
-    paginated_instances = paginator.paginate_queryset(sent_friend_requests, request)
-    paginated_data = FollowSerializer(paginated_instances, many=True).data
-
-    return paginator.get_paginated_response(paginated_data)
 
 class FollowerList(ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
