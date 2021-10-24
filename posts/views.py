@@ -5,6 +5,7 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
 
 from authors.models import Author
 from authors.serializers import AuthorSerializer
@@ -21,14 +22,24 @@ class PostDetail(APIView):
     def get_serializer_class(self):
         return PostSerializer
 
-    """
-    Get author post with the post_id
-    """
     def get(self, request, author_id, post_id):
+        """
+        ## Description:  
+        Get author post with the post_id  
+        ## Responses:  
+        **200**: for successful GET request, see below for example response schema  
+        **403**: if author and post ids are valid, but post's poster is not the author   
+        **404**: is either author or post id is not found 
+        """
         try:
+            author = Author.objects.get(pk=author_id)
             post = Post.objects.get(pk=post_id)
-        except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            if (post.author.id != author.id):
+                error_msg = "this author is not the post's poster"
+                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
+        except (Author.DoesNotExist, Post.DoesNotExist):
+            error_msg = "Author or Post id does not exist"
+            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
         
         # TODO: what if the author itself want to get friends/private posts?
         if (post.visibility != Post.Visibility.PUBLIC):
@@ -37,14 +48,25 @@ class PostDetail(APIView):
         serializer = PostSerializer(post, many=False)
         return Response(serializer.data)
     
-    """
-    Update the post
-    """
     def post(self, request, author_id, post_id):
+        """
+        ## Description:  
+        Update the post (authentication required)  
+        ## Responses:
+        **200**: for successful POST request, updated post detail is returned  
+        **400**: if the update fields failed the serializer check  
+        **403**: if author and post ids are valid, but post's poster is not the author   
+        **404**: if either author or post is not found
+        """
         try:
+            author = Author.objects.get(pk=author_id)
             post = Post.objects.get(pk=post_id)
-        except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            if (post.author.id != author.id):
+                error_msg = "this author is not the post's poster"
+                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
+        except (Author.DoesNotExist, Post.DoesNotExist):
+            error_msg = "Author or Post id does not exist"
+            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
         
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
@@ -54,32 +76,50 @@ class PostDetail(APIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-    """
-    Delete the post
-    """
     def delete(self, request, author_id, post_id): 
+        """
+        ## Description:  
+        Delete the post with post_id 
+        ## Responses:
+        **204**: for successful DELETE request  
+        **403**: if author and post ids are valid, but post's poster is not the author  
+        **404**: if either author or post is not found
+        """
         try:
+            author = Author.objects.get(pk=author_id)
             post = Post.objects.get(pk=post_id)
-        except Post.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            if (post.author.id != author.id):
+                error_msg = "this author is not the post's poster"
+                return Response(error_msg, status=status.HTTP_403_FORBIDDEN)
+        except (Author.DoesNotExist, Post.DoesNotExist):
+            error_msg = "Author or Post id does not exist"
+            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
         
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    """
-    Create a Post with the post_id
-    """
     def put(self, request, author_id, post_id):
+        """
+        ## Description:  
+        Create a Post with the post_id  
+        ## Responses:  
+        **204**: for successful PUT request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author_id cannot be found  
+        **409**: if the post_id already exist  
+        """
         # check whether post with that id already exist
         # and check whether the author exist
         try:
             _ = Post.objects.get(pk=post_id)
-            return Response(status=status.HTTP_409_CONFLICT)
+            error_msg = "This post id already exist"
+            return Response(error_msg, status=status.HTTP_409_CONFLICT)
         except Post.DoesNotExist:
             try:
                 author = Author.objects.get(pk=author_id)
             except Author.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+                error_msg = "Author id not found"
+                return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
@@ -102,10 +142,14 @@ class PostList(ListCreateAPIView):
     def get_queryset(self):
         return self.posts
 
-    """
-    Get recent posts of author (paginated)
-    """
     def get(self, request, *args, **kwargs):
+        """
+        ## Description:  
+        Get recent posts of author (paginated)  
+        ## Responses:  
+        **200**: for successful GET request  
+        **404**: if the author_id cannot be found
+        """
         try:
             author_id = kwargs.get("author_id")
             _ = Author.objects.get(pk=author_id)
@@ -113,15 +157,21 @@ class PostList(ListCreateAPIView):
                 author_id=author_id
             ).order_by('-published')
         except (KeyError, Author.DoesNotExist):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            error_msg = "Author id not found"
+            return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
  
         response = super().list(request, *args, **kwargs)
         return response
     
-    """
-    Create a Post with generated post id
-    """
     def post(self, request, author_id):
+        """
+        ## Description:  
+        Create a Post with generated post id  
+        ## Responses:  
+        **204**: for successful PUT request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author_id cannot be found 
+        """
         post_id = uuid.uuid4()
         return PostDetail().put(request, author_id, post_id)
 
@@ -134,10 +184,10 @@ class CommentList(ListCreateAPIView):
     def get_queryset(self):
         return self.comments
 
-    """
-    get comments of the post
-    """
     def get(self, request, *args, **kwargs):
+        """
+        get comments of the post (paginated)
+        """
         try:
             post_id = kwargs.get("post_id")
             _ = Post.objects.get(pk=post_id)
@@ -154,10 +204,10 @@ class CommentList(ListCreateAPIView):
         response.data["post"] = request_url.replace("comments/", "")
         return response
 
-    """
-    add comment to the post
-    """
     def post(self, request, author_id, post_id):
+        """
+        add a comment to the author_id's post post_id
+        """
         # check if the post and post's author exist
         try:
             _ = Author.objects.get(pk=author_id)
@@ -201,10 +251,10 @@ class CommentDetail(APIView):
     def get_serializer_class(self):
         return CommentSerializer
 
-    """
-    get the comment with the specific post and author
-    """
     def get(self, request, author_id, post_id, comment_id):
+        """
+        get the comment with the specific post and author
+        """
         try:
             comment = Comment.objects.get(pk=comment_id)
         except:
@@ -215,13 +265,14 @@ class CommentDetail(APIView):
 
 class LikesPostList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    """
-    get a list of likes to author_id's post post_id
-    """
+    
     @extend_schema(
         responses=LikeSerializer(many=True),
     )
     def get(self, request, author_id, post_id):
+        """
+        get a list of likes to author_id's post post_id
+        """
         try:
             _ = Author.objects.get(pk=author_id)
             post = Post.objects.get(pk=post_id)
@@ -236,13 +287,13 @@ class LikesPostList(APIView):
 class LikesCommentList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
-    """
-    get a list of likes to author_id's post post_id comment comment_id
-    """
     @extend_schema(
         responses=LikeSerializer(many=True),
     )
     def get(self, request, author_id, post_id, comment_id):
+        """
+        get a list of likes to author_id's post post_id comment comment_id
+        """
         try:
             _ = Author.objects.get(pk=author_id)
             _ = Post.objects.get(pk=post_id)
@@ -257,10 +308,10 @@ class LikesCommentList(APIView):
 
 class LikedList(APIView):
     
-    """
-    get a list of likes orginating from author author_id
-    """
     def get(self, request, author_id):
+        """
+        get a list of likes orginating from author author_id
+        """
         try:
             _ = Author.objects.get(pk=author_id)
         except:

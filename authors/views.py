@@ -25,14 +25,14 @@ class AuthorList(ListAPIView):
     def get_queryset(self):
         return Author.objects.all()
 
-    """
-    List all authors in this server.
-    """
     @extend_schema(
         # specify response format for list: https://drf-spectacular.readthedocs.io/en/latest/faq.html?highlight=list#i-m-using-action-detail-false-but-the-response-schema-is-not-a-list
         responses=AuthorSerializer(many=True)
     )
     def get(self, request, *args, **kwargs):
+        """
+        List all authors in this server.
+        """
         return super().list(request, *args, **kwargs)
 
 class AuthorDetail(APIView):
@@ -43,11 +43,10 @@ class AuthorDetail(APIView):
         # https://drf-spectacular.readthedocs.io/en/latest/customization.html#step-1-queryset-and-serializer-class
         return AuthorSerializer
 
-    """
-    Get author profile
-    """
-
     def get(self, request, author_id):
+        """
+        Get author profile
+        """
         try:
             author = Author.objects.get(pk=author_id)
         except Author.DoesNotExist:
@@ -55,11 +54,10 @@ class AuthorDetail(APIView):
         serializer = AuthorSerializer(author, many=False)
         return Response(serializer.data)
 
-    """
-    Update author profile
-    """
-
     def post(self, request, author_id):
+        """
+        Update author profile
+        """
         try:
             author = Author.objects.get(pk=author_id)
         except Author.DoesNotExist:
@@ -232,7 +230,7 @@ class FollowerDetail(APIView):
     )
     def get(self, request, author_id, foreign_author_url):
         """
-        check if user at the given foreign url is a follower of the local author
+        check if user at the given foreign url is a follower of the local author <br>
         response: 200 <Author object of the follower>
         """
         try:
