@@ -5,7 +5,6 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from drf_spectacular.utils import extend_schema
-from drf_spectacular.types import OpenApiTypes
 
 from authors.models import Author
 from authors.serializers import AuthorSerializer
