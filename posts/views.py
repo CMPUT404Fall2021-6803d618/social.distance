@@ -59,7 +59,7 @@ class PostDetail(APIView):
     def post(self, request, author_id, post_id):
         """
         ## Description:  
-        Update the post (authentication required)  
+        Update the post (authentication required)   
         ## Responses:
         **200**: for successful POST request, updated post detail is returned  
         **400**: if the update fields failed the serializer check  
@@ -99,10 +99,10 @@ class PostDetail(APIView):
         ## Description:  
         Create a Post with the post_id  
         ## Responses:  
-        **204**: for successful PUT request  
+        **200**: for successful PUT request, the post detail is returned  
         **400**: if the payload failed the serializer check  
         **404**: if the author_id cannot be found  
-        **409**: if the post_id already exist  
+        **409**: if the post_id already exist
         """
         # check whether post with that id already exist
         # and check whether the author exist
@@ -125,7 +125,9 @@ class PostDetail(APIView):
                 **serializer.validated_data
             )
             post.update_fields_with_request(request)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+
+            serializer = PostSerializer(post, many=False)
+            return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -164,7 +166,7 @@ class PostList(ListCreateAPIView):
         ## Description:  
         Create a Post with generated post id  
         ## Responses:  
-        **204**: for successful PUT request  
+        **200**: for successful PUT request, the post detail is returned  
         **400**: if the payload failed the serializer check  
         **404**: if the author_id cannot be found 
         """

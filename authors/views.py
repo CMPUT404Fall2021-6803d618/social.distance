@@ -11,7 +11,7 @@ from django.forms.models import model_to_dict
 from authors.pagination import SentFriendRequestPagination
 
 from .serializers import AuthorSerializer, FriendRequestSerializer, InboxObjectSerializer
-from .pagination import AuthorsPagination
+from .pagination import *
 from .models import Author, Follow, FriendRequest, InboxObject
 
 # https://www.django-rest-framework.org/tutorial/3-class-based-views/
@@ -31,7 +31,10 @@ class AuthorList(ListAPIView):
     )
     def get(self, request, *args, **kwargs):
         """
-        List all authors in this server.
+        ## Description:  
+        List all authors in this server.  
+        ## Responses:
+        **200**: for successful GET request
         """
         return super().list(request, *args, **kwargs)
 
@@ -45,7 +48,11 @@ class AuthorDetail(APIView):
 
     def get(self, request, author_id):
         """
-        Get author profile
+        ## Description:  
+        Get author profile  
+        ## Responses:  
+        **200**: for successful GET request  
+        **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(pk=author_id)
@@ -56,7 +63,12 @@ class AuthorDetail(APIView):
 
     def post(self, request, author_id):
         """
-        Update author profile
+        ## Description:  
+        Update author profile  
+        ## Responses:  
+        **200**: for successful POST request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(pk=author_id)
@@ -73,13 +85,17 @@ class AuthorDetail(APIView):
 
 
 class InboxListView(APIView):
-    """
-    POST to inbox: a foreign server sends some json object to the inbox. server basic auth required
-    GET from inbox: get all objects for the current user. user jwt auth required
-    """
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, author_id):
+        """
+        ## Description:  
+        Get all objects for the current user. user jwt auth required    
+        ## Responses:  
+        **200**: for successful GET request  
+        **403**: if the request user is not the same as the author  
+        **404**: if the author id does not exist
+        """
         try:
             author = Author.objects.get(id=author_id)
         except:
@@ -95,6 +111,14 @@ class InboxListView(APIView):
         return Response([self.serialize_inbox_item(obj) for obj in inbox_objects])
 
     def post(self, request, author_id):
+        """
+        ## Description:  
+        A foreign server sends some json object to the inbox. server basic auth required  
+        ## Responses:  
+        **200**: for successful POST request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author id does not exist
+        """
         try:
             author = Author.objects.get(id=author_id)
         except:
@@ -133,11 +157,12 @@ class InboxListView(APIView):
 @permission_classes([permissions.IsAuthenticated])
 def internally_send_friend_request(request, author_id, foreign_author_url):
     """
+    **[Internal]** <br>
     the /author/<author_id>/friend_request/<foreign_author_url>/ endpoint
     - author_id: anything other than slash, but we hope it's a uuid
     - foreign_author_url: anything, but we hope it's a valid url.
 
-    used only by local users, jwt authentication required.
+    used only by local users, jwt authentication required.  
     Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
 
     NOTE: I think putting url inside a url sucks, too. -Lucas
@@ -187,7 +212,8 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
 @permission_classes([permissions.IsAuthenticated])
 def internally_get_sent_friend_requests(request, author_id):
     """
-    GET /author/<author_id>/friend_request/
+    **[Internal]** <br>
+    GET /author/<author_id>/friend_request/  
     get all friend requests sent
     """
     paginator = SentFriendRequestPagination()
@@ -204,10 +230,8 @@ def internally_get_sent_friend_requests(request, author_id):
 
 class FollowerList(ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    """
-    get a list of authors who are their followers
-    """
     serializer_class = AuthorSerializer
+    pagination_class = FollowersPagination
 
     def get_queryset(self):
         author_id = self.kwargs.get('author_id')
@@ -221,6 +245,15 @@ class FollowerList(ListAPIView):
         # find all author following this author
         return Author.objects.filter(followings__followee=author)
 
+    def get(self, request, *args, **kwargs):
+        """
+        ## Description:  
+        Get a list of author who are their followers  
+        ## Responses:  
+        **200**: for successful GET request  
+        **404**: if the author id does not exist
+        """
+        return super().list(request, *args, **kwargs)
 
 class FollowerDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -230,8 +263,11 @@ class FollowerDetail(APIView):
     )
     def get(self, request, author_id, foreign_author_url):
         """
-        check if user at the given foreign url is a follower of the local author <br>
-        response: 200 <Author object of the follower>
+        ## Description:  
+        check if user at the given foreign url is a follower of the local author  
+        ## Responses:  
+        **200**: for successful GET request, return <Author object of the follower>   
+        **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(id=author_id)
@@ -245,8 +281,11 @@ class FollowerDetail(APIView):
 
     def delete(self, request, author_id, foreign_author_url):
         """
-        delete a follower by url
-        response: 200 successfully deleted
+        ## Description:  
+        delete a follower by url  
+        ## Responses:  
+        **200**: for successful DELETE request  
+        **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(id=author_id)
@@ -281,10 +320,12 @@ class FollowerDetail(APIView):
     )
     def put(self, request, author_id, foreign_author_url):
         """
-        Add a follower (must be authenticated)
-
-        payload: <Author>
-        response: 200 successfully created follow relation
+        ## Description:  
+        Add a follower (must be authenticated)   
+        ## Responses:  
+        **200**: for successful PUT request  
+        **400**: if the payload failed the serializer check  
+        **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(id=author_id)
