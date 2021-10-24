@@ -38,6 +38,10 @@ class PageSizePagination(PageNumberPagination):
                     'type': 'integer',
                     'example': 123,
                 },
+                'count': {
+                    'type': 'integer',
+                    'example': 123,
+                },
                 self.key: schema,
             },
         }
