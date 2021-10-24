@@ -5,3 +5,5 @@ class AuthorsPagination(PageSizePagination):
 
 class FollowingsPagination(PageSizePagination):
     type = 'followings'
+class FollowersPagination(PageSizePagination):
+    type = 'followers'
