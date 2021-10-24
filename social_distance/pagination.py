@@ -17,6 +17,7 @@ class PageSizePagination(PageNumberPagination):
         response.update({
             'page': int(self.get_page_number(request=self.request, paginator=self.page.paginator)),
             'size': int(self.get_page_size(request=self.request)),
+            'count': self.page.paginator.count,
             self.key: data
         })
         return Response(response) 
