@@ -3,7 +3,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, exceptions
 from drf_spectacular.utils import extend_schema
 
 from authors.models import Author
@@ -21,12 +21,12 @@ def get_author_and_post(author_id, post_id):
         post = Post.objects.get(pk=post_id)
         if (post.author.id != author.id):
             error_msg = "this author is not the post's poster"
-            return (Response(error_msg, status=status.HTTP_403_FORBIDDEN), None, None)
+            raise exceptions.PermissionDenied(error_msg)
     except (Author.DoesNotExist, Post.DoesNotExist):
         error_msg = "Author or Post id does not exist"
-        return (Response(error_msg, status=status.HTTP_404_NOT_FOUND), None, None)
+        raise exceptions.NotFound(error_msg)
 
-    return (Response(), author, post)
+    return (author, post)
 
 class PostDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -44,9 +44,7 @@ class PostDetail(APIView):
                  OR if the post is not public     
         **404**: is either author or post id is not found 
         """
-        get_response, _, post = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
+        _, post = get_author_and_post(author_id, post_id)
         
         # TODO: what if the author itself want to get friends/private posts?
         if (post.visibility != Post.Visibility.PUBLIC):
@@ -65,9 +63,7 @@ class PostDetail(APIView):
         **403**: if author and post ids are valid, but post's poster is not the author   
         **404**: if either author or post is not found
         """
-        get_response, _, post = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
+        _, post = get_author_and_post(author_id, post_id)
         
         serializer = PostSerializer(post, data=request.data, partial=True)
         if serializer.is_valid():
@@ -86,10 +82,8 @@ class PostDetail(APIView):
         **403**: if author and post ids are valid, but post's poster is not the author  
         **404**: if either author or post is not found
         """
-        get_response, _, post = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
-        
+        _, post = get_author_and_post(author_id, post_id)
+
         post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -192,9 +186,7 @@ class CommentList(ListCreateAPIView):
         """
         author_id = kwargs.get("author_id")
         post_id = kwargs.get("post_id")
-        get_response, _, _ = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
+        _, _ = get_author_and_post(author_id, post_id)
        
         self.comments = Comment.objects.filter(
             post_id=post_id
@@ -268,9 +260,7 @@ class CommentDetail(APIView):
         **403**: if post's poster is not author, or comment belongs to another post  
         **404**: if either author, post, or comment does not exist
         """
-        get_response, _, post = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
+        _, post = get_author_and_post(author_id, post_id)
     
         try:
             comment = Comment.objects.get(pk=comment_id)
@@ -324,9 +314,7 @@ class LikesCommentList(APIView):
         **403**: if post's poster is not author, or comment belongs to another post  
         **404**: if either author, post, or comment does not exist
         """
-        get_response, _, post = get_author_and_post(author_id, post_id)
-        if get_response.status_code != 200:
-            return get_response
+        _, post = get_author_and_post(author_id, post_id)
     
         try:
             comment = Comment.objects.get(pk=comment_id)
