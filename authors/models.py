@@ -60,33 +60,31 @@ class Author(models.Model):
 class Follow(models.Model):
     """
     Relation that represents the current Author, A, being followed by another author, B
-    followee: A
-    follower: B
-
+    object: A
+    actor: B
     """
+    class FollowStatus(models.TextChoices):
+        PENDING = "PENDING"
+        ACCEPTED = "ACCEPTED"
+
+    summary = models.CharField(max_length=200, default="")
+
+    status = models.CharField(max_length=20, choices=FollowStatus.choices, default=FollowStatus.PENDING)
 
     # Author who is being followed by the follower. corresponds to Author.follower.all()
-    followee = models.ForeignKey(Author, related_name="followers", null=False, on_delete=models.CASCADE)
+    object = models.ForeignKey(Author, related_name="followers", null=False, on_delete=models.CASCADE)
 
     # URL of Author who is following the followee
-    follower = models.ForeignKey(Author, related_name="followings", null=False, on_delete=models.CASCADE)
+    actor = models.ForeignKey(Author, related_name="followings", null=False, on_delete=models.CASCADE)
+
+    @staticmethod
+    def get_api_type():
+        return 'Follow'
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=['followee', 'follower'], name='unique_follower')
+            models.UniqueConstraint(fields=['object', 'actor'], name='unique_follower')
         ]
-
-
-class FriendRequest(models.Model):
-    """
-    Request from an author who wants to befriend/follow another author.
-    Once accepted, both authors can see each others' friend posts and previous friend posts.
-    """
-    summary = models.CharField(max_length=200)
-    # author who is sending the friend/following request
-    actor = models.ForeignKey("Author", related_name="friend_requests_sent", on_delete=models.CASCADE)
-    # author who is receiving the request
-    object = models.ForeignKey("Author", related_name="friend_requests_received", on_delete=models.CASCADE)
 
 
 class InboxObject(models.Model):

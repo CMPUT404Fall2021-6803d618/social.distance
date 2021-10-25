@@ -10,6 +10,7 @@ urlpatterns = [
          PostDetail.as_view(), name="post-detail"),
     path('<str:author_id>/inbox/', InboxListView.as_view(), name="author-inbox"),
     path('<str:author_id>/', AuthorDetail.as_view(), name="author-detail"),
+
     path('<str:author_id>/posts/<str:post_id>/', PostDetail.as_view(), name="post-detail"),
     path('<str:author_id>/posts/', PostList.as_view(), name="post-list"),
     path('<str:author_id>/posts/<str:post_id>/comments/', CommentList.as_view(), name="comment-list"),
@@ -21,8 +22,7 @@ urlpatterns = [
     path('<str:author_id>/followers/', FollowerList.as_view(), name="author-followers"),
     re_path(r'^(?P<author_id>[^/]*)/followers/(?P<foreign_author_url>.*)$', FollowerDetail.as_view(), name="author-follower-detail"),
 
-    # extra internal API for client
-    path('<str:author_id>/friend-requests/', internally_get_sent_friend_requests , name="comment-list"),
-    re_path(r'^(?P<author_id>[^/]*)/friend-requests/(?P<foreign_author_url>.*)$',
+    path('<str:author_id>/followings/', FollowingList.as_view(), name='following-list'),
+    re_path(r'^(?P<author_id>[^/]*)/followings/(?P<foreign_author_url>.*)$',
             internally_send_friend_request, name="friend-request"),
 ]
