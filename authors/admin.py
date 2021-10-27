@@ -1,6 +1,6 @@
 from django.contrib import admin
-from authors.models import Author, InboxObject, FriendRequest
+from authors.models import Author, Follow, InboxObject
 
 admin.site.register(Author)
+admin.site.register(Follow)
 admin.site.register(InboxObject)
-admin.site.register(FriendRequest)

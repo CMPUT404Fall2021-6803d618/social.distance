@@ -31,7 +31,7 @@ class Node(models.Model):
 # https://stackoverflow.com/a/24025175
 # catch all request error and just print them out instead
 def silent_500(fn):
-    @functools.warps(fn)
+    @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
@@ -58,7 +58,7 @@ class ConnectorService:
     @silent_500
     def notify_post(self, post: Post):
         # get all follwers and their endpoints
-        followers = Author.objects.filter(followings__followee=post.author)
+        followers = Author.objects.filter(followings__object=post.author)
 
         results = []
         # post the post to each of the followers' inboxes

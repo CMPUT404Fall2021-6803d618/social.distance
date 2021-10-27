@@ -6,7 +6,7 @@ from django.db.models import Q
 
 from rest_framework import exceptions, serializers
 
-from .models import Author, FriendRequest, InboxObject
+from .models import Author, Follow, InboxObject
 
 
 class AuthorSerializer(serializers.ModelSerializer):
@@ -80,15 +80,16 @@ class AuthorSerializer(serializers.ModelSerializer):
         fields = ['type', 'id', 'host', 'displayName', 'url', 'github']
 
 
-class FriendRequestSerializer(serializers.ModelSerializer):
+class FollowSerializer(serializers.ModelSerializer):
     """
-    used to parse incoming POST /inbox/ where the json object is a FriendRequest,
+    used to parse incoming POST /inbox/ where the json object is a Follow,
     sent from another server.
 
     It expects the author object to conform to our AuthorSerializer.
     """
     type = serializers.CharField(default='Follow', read_only=True)
     summary = serializers.CharField()
+    status = serializers.ChoiceField(required=False, read_only=True, choices=Follow.FollowStatus.choices)
     actor = AuthorSerializer()
     object = AuthorSerializer()
 
@@ -98,7 +99,7 @@ class FriendRequestSerializer(serializers.ModelSerializer):
 
         actor = AuthorSerializer._upcreate(actor_data)
         object = Author.objects.get(url=object_data['url'])
-        return FriendRequest.objects.create(summary=validated_data['summary'], actor=actor, object=object)
+        return Follow.objects.create(summary=validated_data['summary'], actor=actor, object=object)
 
     def validate_object(self, data):
         serializer = AuthorSerializer(data=data)
@@ -115,8 +116,8 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         return serializer.validated_data
 
     class Meta:
-        model = FriendRequest
-        fields = ['summary', 'actor', 'object', 'type']
+        model = Follow
+        fields = ['summary', 'actor', 'object', 'type', 'status']
 
 
 class InboxObjectSerializer(serializers.ModelSerializer):

@@ -17,6 +17,7 @@ class PostSerializer(serializers.ModelSerializer):
     count = serializers.IntegerField(source="count_comments", read_only=True)
     published = serializers.DateTimeField(read_only=True)
     author = AuthorSerializer(required=False)
+    comments = serializers.URLField(source="build_comments_url", read_only=True)
 
     # e.g. 'PUBLIC'
     visibility = serializers.ChoiceField(choices=Post.Visibility.choices)
@@ -41,15 +42,17 @@ class PostSerializer(serializers.ModelSerializer):
         # show these fields in response
         fields = [
             'type', 
-            'id', 
             'title', 
+            'id', 
             'source', 
             'origin', 
             'description',
             'contentType',
-            'author',
             'content',
+            'author',
+            # 'categories',
             'count',
+            'comments',
             'published',
             'visibility',
             'unlisted'

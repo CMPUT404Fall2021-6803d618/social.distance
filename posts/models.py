@@ -60,6 +60,9 @@ class Post(models.Model):
     def get_absolute_url(self):
         return reverse('post-detail', args=[str(self.author.id), str(self.id)])
 
+    def build_comments_url(self):
+        return self.url + "/comments/"
+
     def count_comments(self):
         return self.comment_set.count()
 

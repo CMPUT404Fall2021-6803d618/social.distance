@@ -6,8 +6,8 @@ from rest_framework.test import APIClient, APIRequestFactory, force_authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.contrib.auth.models import User
-from authors.models import Author
-from authors.serializers import AuthorSerializer, FriendRequestSerializer
+from authors.models import Author, Follow
+from authors.serializers import AuthorSerializer, FollowSerializer
 from authors.views import InboxListView
 
 # Create your tests here.
@@ -22,7 +22,7 @@ def client_with_auth(user, client):
     return client
 
 
-class FriendRequestTestCase(TestCase):
+class FollowTestCase(TestCase):
     DATA = {
         "type": "Follow",
         "summary": "Greg wants to follow Lara",
@@ -62,7 +62,7 @@ class FriendRequestTestCase(TestCase):
 
     def test_deserializing_friend_request(self):
         # try parse the data
-        serialzier = FriendRequestSerializer(data=deepcopy(self.DATA))
+        serialzier = FollowSerializer(data=deepcopy(self.DATA))
         if not serialzier.is_valid():
             print(serialzier.errors)
         assert serialzier.is_valid()
@@ -75,17 +75,17 @@ class FriendRequestTestCase(TestCase):
         new_client = client_with_auth(user, client)
         _ = new_client.post(
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', data=self.DATA, format='json')
-        _ = new_client.post(
-            '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', data=self.DATA, format='json')
 
         inbox_items = new_client.get(
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', format='json')
-        self.assertEqual(len(inbox_items.data), 2)
+        self.assertEqual(len(inbox_items.data), 1)
+        status = inbox_items.data[0].pop('status')
+        self.assertEqual(status, Follow.FollowStatus.PENDING)
         self.assertDictEqual(inbox_items.data[0], self.DATA)
 
         local_author = Author.objects.get(
             id='9de17f29c12e8f97bcbbd34cc908f1baba40658e')
-        self.assertEqual(len(local_author.inbox_objects.all()), 2)
+        self.assertEqual(len(local_author.inbox_objects.all()), 1)
 
 
 class AuthorSerializerTestCase(TestCase):
@@ -151,7 +151,9 @@ class AuthorTestCase(TestCase):
     def test_get_author_list(self):
         self.setup_single_user_and_author()
         res = client.get('/authors/', format='json')
-        content = json.loads(res.content)
+        res_content = json.loads(res.content)
+        assert "items" in res_content
+        content = res_content["items"]
 
         # content should look like [{'id': 'adfsadfasdfasdf', 'displayName': 'test_username', 'url': '', 'host': '', 'user': 1, 'friends': []}]
         self.assertEqual(len(content), 1)
