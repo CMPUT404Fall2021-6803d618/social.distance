@@ -254,7 +254,7 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     foreign_author_ser = AuthorSerializer(data=foreign_author_json)
 
     if foreign_author_ser.is_valid():
-        foreign_author = foreign_author_ser.upcreate_from_validated_data()
+        foreign_author = foreign_author_ser.save()
 
         if Follow.objects.filter(actor=author, object=foreign_author):
             raise exceptions.PermissionDenied("duplicate follow object exists for the authors")
@@ -396,10 +396,14 @@ class FollowerDetail(APIView):
             else:
                 return Response(follower_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # create the Follow object for this relationship, if not exist already
-        if not Follow.objects.filter(object=author, actor=follower):
-            follower_following = Follow.objects.create(
-                object=author, actor=follower)
+        # accept the follow request (activate the relationship), or create it if not exist already
+        pending_follow = Follow.objects.filter(object=author, actor=follower, status=Follow.FollowStatus.PENDING)
+        if pending_follow:
+            pending_follow.status = Follow.FollowStatus.ACCEPTED
+            pending_follow.save()
+        else:
+            _ = Follow.objects.create(
+                object=author, actor=follower, status=Follow.FollowStatus.ACCEPTED)
         return Response()
 
     def get_follower_serializer_from_request(self, request, foreign_author_url):
@@ -409,7 +413,7 @@ class FollowerDetail(APIView):
             # try fetch the foreign user first, upcreate it locally and do it again.
             # TODO server2server basic auth, refactor into server2server connection pool/service
             res = requests.get(foreign_author_url)
-            follower_serializer = AuthorSerializer(data=res.text)
+            follower_serializer = AuthorSerializer(data=res.json())
         return follower_serializer
 
 class FollowingList(ListAPIView):

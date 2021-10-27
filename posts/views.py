@@ -118,11 +118,7 @@ class PostDetail(APIView):
 
         serializer = PostSerializer(data=request.data)
         if serializer.is_valid():
-            post = Post.objects.create(
-                author=author,
-                id=post_id,
-                **serializer.validated_data
-            )
+            post = serializer.save()
             post.update_fields_with_request(request)
 
             connector_service.notify_post(post)
