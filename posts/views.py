@@ -55,7 +55,7 @@ class PostDetail(APIView):
         if (post.visibility != Post.Visibility.PUBLIC):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        serializer = PostSerializer(post, many=False)
+        serializer = PostSerializer(post, many=False, context={'author_id', author_id})
         return Response(serializer.data)
     
     def post(self, request, author_id, post_id):
@@ -70,7 +70,7 @@ class PostDetail(APIView):
         """
         _, post = get_author_and_post(author_id, post_id)
         
-        serializer = PostSerializer(post, data=request.data, partial=True)
+        serializer = PostSerializer(post, data=request.data, partial=True, context={'author_id': author_id})
         if serializer.is_valid():
             post = serializer.save()
             post.update_fields_with_request(request)
@@ -116,9 +116,10 @@ class PostDetail(APIView):
                 error_msg = "Author id not found"
                 return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = PostSerializer(data=request.data)
+        serializer = PostSerializer(data=request.data, context={'author_id': author_id})
         if serializer.is_valid():
-            post = serializer.save()
+            # using raw create because we need custom id
+            post = Post.objects.create(**serializer.validated_data, author=author, id=post_id)
             post.update_fields_with_request(request)
 
             connector_service.notify_post(post)

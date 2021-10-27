@@ -25,14 +25,7 @@ class PostSerializer(serializers.ModelSerializer):
     contentType = serializers.ChoiceField(choices=Post.ContentType.choices, source='content_type')
 
     def create(self, validated_data):
-        validated_author_data = validated_data.pop('author')
-        try:
-            if validated_author_data:
-                updated_author = AuthorSerializer._upcreate(validated_author_data)
-            else:
-                updated_author = Author.objects.get(id=self.context.get('author_id'))
-        except:
-            raise exceptions.ValidationError("author does not exist for the post")
+        updated_author = AuthorSerializer.extract_and_upcreate_author(validated_data, author_id=self.context.get('author_id'))
         return Post.objects.create(**validated_data, author=updated_author)
 
     # TODO: missing the following fields
@@ -90,14 +83,7 @@ class LikeSerializer(serializers.ModelSerializer):
     object = serializers.URLField()
 
     def create(self, validated_data):
-        validated_author_data = validated_data.pop('author')
-        try:
-            if validated_author_data:
-                updated_author = AuthorSerializer._upcreate(validated_author_data)
-            else:
-                updated_author = Author.objects.get(id=self.context.get('author_id'))
-        except:
-            raise exceptions.ValidationError("author does not exist for the post")
+        updated_author = AuthorSerializer.extract_and_upcreate_author(validated_data, author_id=self.context.get('author_id'))
         return Like.objects.create(**validated_data, author=updated_author)
 
     class Meta:
