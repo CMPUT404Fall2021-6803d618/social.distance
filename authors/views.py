@@ -397,13 +397,15 @@ class FollowerDetail(APIView):
                 return Response(follower_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # accept the follow request (activate the relationship), or create it if not exist already
-        pending_follow = Follow.objects.filter(object=author, actor=follower, status=Follow.FollowStatus.PENDING)
-        if pending_follow:
+        try:
+            pending_follow = Follow.objects.get(object=author, actor=follower, status=Follow.FollowStatus.PENDING)
             pending_follow.status = Follow.FollowStatus.ACCEPTED
             pending_follow.save()
-        else:
+        except Follow.DoesNotExist:
             _ = Follow.objects.create(
                 object=author, actor=follower, status=Follow.FollowStatus.ACCEPTED)
+        except Follow.MultipleObjectsReturned:
+            raise exceptions.ParseError("There exists multiple Follow objects. Please report how you reached this error")
         return Response()
 
     def get_follower_serializer_from_request(self, request, foreign_author_url):
