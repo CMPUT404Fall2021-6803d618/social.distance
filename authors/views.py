@@ -11,6 +11,7 @@ from django.forms.models import model_to_dict
 
 from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
+from nodes.models import connector_service
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -265,12 +266,8 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
         )
 
         follow.save()
-
-        follow_ser = FollowSerializer(follow)
-        # TODO refactor into notify service, server auth
-        res = requests.post(foreign_author_url + 'inbox/',
-                            json=follow_ser.data).json()
-        return Response(follow_ser.data)
+        connector_service.notify_follow(follow)
+        return Response(FollowSerializer(follow).data)
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

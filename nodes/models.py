@@ -8,7 +8,8 @@ import requests
 from requests.models import HTTPBasicAuth, Response
 from requests import Request
 from rest_framework import exceptions
-from authors.models import Author
+from authors.models import Author, Follow
+from authors.serializers import FollowSerializer
 
 from posts.models import Like, Post
 from posts.serializers import LikeSerializer, PostSerializer
@@ -69,5 +70,13 @@ class ConnectorService:
             results.append(res.content)
         return results
 
+    @silent_500
+    def notify_follow(self, follow: Follow):
+        target_author = follow.object
+
+        inbox_url, host_url = self.get_inbox_and_host_from_url(target_author.url)
+        node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+        res = global_session.post(inbox_url, json=FollowSerializer(follow).data, auth=node.get_basic_auth())
+        return res.content
         
 connector_service = ConnectorService()
