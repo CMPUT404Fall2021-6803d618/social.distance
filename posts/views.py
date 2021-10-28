@@ -60,16 +60,21 @@ class PostDetail(APIView):
     
     def post(self, request, author_id, post_id):
         """
-        ## Description:  
-        Update the post (authentication required)   
-        ## Responses:
-        **200**: for successful POST request, updated post detail is returned  
-        **400**: if the update fields failed the serializer check  
-        **403**: if author and post ids are valid, but post's poster is not the author   
+        ## Description:
+        Update the post (authentication required)
+        ## Responses: 
+        **200**: for successful POST request, updated post detail is returned <br>
+        **400**: if the update fields failed the serializer check <br>
+        **401**: if the authenticated user is not the post's poster <br>
+        **403**: if author and post ids are valid, but post's poster is not the author <br>
         **404**: if either author or post is not found
         """
-        _, post = get_author_and_post(author_id, post_id)
+        author, post = get_author_and_post(author_id, post_id)
         
+        # author without a user is a foreign author
+        if not author.user or request.user != author.user:
+            raise exceptions.AuthenticationFailed
+
         serializer = PostSerializer(post, data=request.data, partial=True, context={'author_id': author_id})
         if serializer.is_valid():
             post = serializer.save()
