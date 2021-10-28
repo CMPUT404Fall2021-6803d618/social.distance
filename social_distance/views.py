@@ -7,6 +7,10 @@ from drf_spectacular.utils import extend_schema
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
+from django.contrib.auth.backends import AllowAllUsersModelBackend
+
+from social_distance.models import DynamicSettings
+
 from .serializers import CommonAuthenticateSerializer, RegisterSerializer
 
 
@@ -38,6 +42,15 @@ def register(request):
     if serializer.is_valid():
         # create user and author
         user = serializer.save()
+        try:
+            # if needs approval mode is turned on, set user to inactive on register
+            # will need manual approval later by setting u.is_active = True
+            dyn_settings = DynamicSettings.load()
+            if dyn_settings.register_needs_approval:
+                user.is_active = False
+                user.save()
+        except DynamicSettings.DoesNotExist:
+            pass
         return Response(CommonAuthenticateSerializer(user).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -82,11 +95,14 @@ def login(request):
         data = serializer.validated_data
         username = data.get('username')
         password = data.get('password')
-        user = authenticate(username=username, password=password)
 
+        # auth backend with custom rule so that we can verify inactive users
+        # but still forbid them from logging in.
+        auth_backend = AllowAllUsersModelBackend()
+        user = auth_backend.authenticate(request=request, username=username, password=password)
         if not user:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
         if not user.is_active:
-            return Response(status=status.HTTP_403_FORBIDDEN)
+            return Response("please wait for the admin to approve and activate your account", status=status.HTTP_403_FORBIDDEN)
         return Response(CommonAuthenticateSerializer(user).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

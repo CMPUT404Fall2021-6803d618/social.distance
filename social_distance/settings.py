@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'posts',
     'nodes',
+    'social_distance',
 ]
 
 REST_FRAMEWORK = {
