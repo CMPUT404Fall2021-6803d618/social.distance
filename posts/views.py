@@ -41,12 +41,12 @@ class PostDetail(APIView):
 
     def get(self, request, author_id, post_id):
         """
-        ## Description:  
-        Get author post with the post_id  
-        ## Responses:  
-        **200**: for successful GET request, see below for example response schema  
+        ## Description:
+        Get author post with the post_id
+        ## Responses:
+        **200**: for successful GET request, see below for example response schema <br>
         **403**: if author and post ids are valid, but post's poster is not the author 
-                 OR if the post is not public     
+                 OR if the post is not public <br>
         **404**: is either author or post id is not found 
         """
         _, post = get_author_and_post(author_id, post_id)
@@ -86,11 +86,11 @@ class PostDetail(APIView):
     
     def delete(self, request, author_id, post_id): 
         """
-        ## Description:  
+        ## Description:
         Delete the post with post_id 
         ## Responses:
-        **204**: for successful DELETE request  
-        **403**: if author and post ids are valid, but post's poster is not the author  
+        **204**: for successful DELETE request <br>
+        **403**: if author and post ids are valid, but post's poster is not the author <br>
         **404**: if either author or post is not found
         """
         _, post = get_author_and_post(author_id, post_id)
@@ -100,12 +100,12 @@ class PostDetail(APIView):
 
     def put(self, request, author_id, post_id):
         """
-        ## Description:  
-        Create a Post with the post_id  
-        ## Responses:  
-        **200**: for successful PUT request, the post detail is returned  
-        **400**: if the payload failed the serializer check  
-        **404**: if the author_id cannot be found  
+        ## Description:
+        Create a Post with the post_id
+        ## Responses:
+        **200**: for successful PUT request, the post detail is returned <br>
+        **400**: if the payload failed the serializer check <br>
+        **404**: if the author_id cannot be found <br>
         **409**: if the post_id already exist
         """
         # check whether post with that id already exist
@@ -145,10 +145,10 @@ class PostList(ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        ## Description:  
-        Get recent posts of author (paginated)  
-        ## Responses:  
-        **200**: for successful GET request  
+        ## Description:
+        Get recent posts of author (paginated)
+        ## Responses:
+        **200**: for successful GET request <br>
         **404**: if the author_id cannot be found
         """
         try:
@@ -166,11 +166,11 @@ class PostList(ListCreateAPIView):
     
     def post(self, request, author_id):
         """
-        ## Description:  
-        Create a Post with generated post id  
-        ## Responses:  
-        **200**: for successful PUT request, the post detail is returned  
-        **400**: if the payload failed the serializer check  
+        ## Description:
+        Create a Post with generated post id
+        ## Responses:
+        **200**: for successful PUT request, the post detail is returned <br>
+        **400**: if the payload failed the serializer check <br>
         **404**: if the author_id cannot be found 
         """
         post_id = uuid.uuid4()
@@ -188,11 +188,11 @@ class CommentList(ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         """
-        ## Description:  
-        Get comments of the post (paginated)  
-        ## Responses:  
-        **200**: for successful GET request  
-        **403**: if author and post ids are valid, but post's poster is not the author  
+        ## Description:
+        Get comments of the post (paginated)
+        ## Responses:
+        **200**: for successful GET request <br>
+        **403**: if author and post ids are valid, but post's poster is not the author <br>
         **404**: if either author or post is not found 
         """
         author_id = kwargs.get("author_id")
@@ -201,7 +201,7 @@ class CommentList(ListCreateAPIView):
        
         self.comments = Comment.objects.filter(
             post_id=post_id
-        ).order_by('-published')    
+        ).order_by('-published')
  
         response = super().list(request, *args, **kwargs)
         # '?' excludes query parameter
@@ -212,12 +212,12 @@ class CommentList(ListCreateAPIView):
 
     def post(self, request, author_id, post_id):
         """
-        ## Description:  
-        Add a comment to the author_id's post post_id    
-        ## Responses:  
-        **204**: for successful POST request  
-        **400**: if the payload failed the serializer check  
-        **404**: if the author or post id does not exist  
+        ## Description:
+        Add a comment to the author_id's post post_id
+        ## Responses:
+        **204**: for successful POST request <br>
+        **400**: if the payload failed the serializer check <br>
+        **404**: if the author or post id does not exist
         """
         # check if the post and post's author exist
         try:
@@ -266,11 +266,11 @@ class CommentDetail(APIView):
 
     def get(self, request, author_id, post_id, comment_id):
         """
-        ## Description:  
-        Get the comment with the specific post and author  
-        ## Responses:  
-        **200**: for successful GET request  
-        **403**: if post's poster is not author, or comment belongs to another post  
+        ## Description:
+        Get the comment with the specific post and author
+        ## Responses:
+        **200**: for successful GET request <br>
+        **403**: if post's poster is not author, or comment belongs to another post <br>
         **404**: if either author, post, or comment does not exist
         """
         _, post = get_author_and_post(author_id, post_id)
@@ -296,10 +296,10 @@ class LikesPostList(APIView):
     )
     def get(self, request, author_id, post_id):
         """
-        ## Description:  
-        Get a list of likes to author_id's post post_id  
-        ## Responses:  
-        **200**: for successful GET request  
+        ## Description:
+        Get a list of likes to author_id's post post_id
+        ## Responses:
+        **200**: for successful GET request <br>
         **404**: if author or post does not exist
         """
         try:
@@ -322,11 +322,11 @@ class LikesCommentList(APIView):
     )
     def get(self, request, author_id, post_id, comment_id):
         """
-        ## Description:  
-        Get a list of likes to author_id's post post_id comment comment_id  
-        ## Responses:  
-        **200**: for successful GET request  
-        **403**: if post's poster is not author, or comment belongs to another post  
+        ## Description:
+        Get a list of likes to author_id's post post_id comment comment_id
+        ## Responses:
+        **200**: for successful GET request <br>
+        **403**: if post's poster is not author, or comment belongs to another post <br>
         **404**: if either author, post, or comment does not exist
         """
         _, post = get_author_and_post(author_id, post_id)
@@ -349,10 +349,10 @@ class LikedList(APIView):
     
     def get(self, request, author_id):
         """
-        ## Description:  
-        Get a list of likes orginating from author author_id  
-        ## Responses:  
-        **200**: for sucessful GET request  
+        ## Description:
+        Get a list of likes orginating from author author_id
+        ## Responses:
+        **200**: for sucessful GET request <br>
         **404**: if the author id does not exist
         """
         try:
@@ -391,8 +391,13 @@ class LikedList(APIView):
     )
     def post(self, request, author_id):
         """
-        create a like object and send to its target author
+        ## Description:
+        create a like object and send to its target author <br>
         NOTE: authenticated as the sender author itself
+        ## Responses:
+        **200**: for successful POST request
+        **400**: if the payload failed the serializer check
+        **404**: if the author does not exist
         """
         return self.internally_send_like(request, author_id)
 
