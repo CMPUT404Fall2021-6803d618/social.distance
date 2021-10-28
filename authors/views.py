@@ -191,7 +191,7 @@ class InboxListView(APIView):
             raise exceptions.NotFound
 
         serializer = self.deserialize_inbox_data(
-            self.request.data, context={'author', author})
+            self.request.data, context={'author': author})
         if serializer.is_valid():
             # save the item to database, could be post or like or FR
             item = serializer.save()

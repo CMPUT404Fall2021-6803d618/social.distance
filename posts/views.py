@@ -55,7 +55,7 @@ class PostDetail(APIView):
         if (post.visibility != Post.Visibility.PUBLIC):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        serializer = PostSerializer(post, many=False, context={'author_id', author_id})
+        serializer = PostSerializer(post, many=False, context={'author_id': author_id})
         return Response(serializer.data)
     
     def post(self, request, author_id, post_id):
