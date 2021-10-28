@@ -391,8 +391,13 @@ class LikedList(APIView):
     )
     def post(self, request, author_id):
         """
-        create a like object and send to its target author
+        ## Description:
+        create a like object and send to its target author <br>
         NOTE: authenticated as the sender author itself
+        ## Responses:
+        **200**: for successful POST request
+        **400**: if the payload failed the serializer check
+        **404**: if the author does not exist
         """
         return self.internally_send_like(request, author_id)
 
