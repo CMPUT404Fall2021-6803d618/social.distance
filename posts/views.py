@@ -1,13 +1,18 @@
+import requests
 from django.shortcuts import render
+from rest_framework.decorators import api_view
+from drf_spectacular.types import OpenApiTypes
 
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, exceptions
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiExample, extend_schema
 
 from authors.models import Author
 from authors.serializers import AuthorSerializer
+from nodes.models import connector_service
+
 from .models import Post, Comment, Like
 from .serializers import *
 from .pagination import CommentsPagination, PostsPagination
@@ -49,8 +54,8 @@ class PostDetail(APIView):
         # TODO: what if the author itself want to get friends/private posts?
         if (post.visibility != Post.Visibility.PUBLIC):
             return Response(status=status.HTTP_403_FORBIDDEN)
-    
-        serializer = PostSerializer(post, many=False)
+
+        serializer = PostSerializer(post, many=False, context={'author_id': author_id})
         return Response(serializer.data)
     
     def post(self, request, author_id, post_id):
@@ -65,10 +70,11 @@ class PostDetail(APIView):
         """
         _, post = get_author_and_post(author_id, post_id)
         
-        serializer = PostSerializer(post, data=request.data, partial=True)
+        serializer = PostSerializer(post, data=request.data, partial=True, context={'author_id': author_id})
         if serializer.is_valid():
             post = serializer.save()
             post.update_fields_with_request(request)
+            connector_service.notify_post(post) # TODO should we notify on update post?
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -110,26 +116,25 @@ class PostDetail(APIView):
                 error_msg = "Author id not found"
                 return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = PostSerializer(data=request.data)
+        serializer = PostSerializer(data=request.data, context={'author_id': author_id})
         if serializer.is_valid():
-            post = Post.objects.create(
-                author=author, 
-                id=post_id,
-                **serializer.validated_data
-            )
+            # using raw create because we need custom id
+            post = Post.objects.create(**serializer.validated_data, author=author, id=post_id)
             post.update_fields_with_request(request)
 
+            connector_service.notify_post(post)
             serializer = PostSerializer(post, many=False)
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PostList(ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     serializer_class = PostSerializer
     pagination_class = PostsPagination
 
-    # used by the ListCreateAPIView super class 
+    # used by the ListCreateAPIView super class
     def get_queryset(self):
         return self.posts
 
@@ -166,12 +171,13 @@ class PostList(ListCreateAPIView):
         post_id = uuid.uuid4()
         return PostDetail().put(request, author_id, post_id)
 
+
 class CommentList(ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     serializer_class = CommentSerializer
     pagination_class = CommentsPagination
 
-    # used by the ListCreateAPIView super class 
+    # used by the ListCreateAPIView super class
     def get_queryset(self):
         return self.comments
 
@@ -230,15 +236,16 @@ class CommentList(ListCreateAPIView):
             comment_author = comment_author_set.get()
         else:
             # foreign author
-            comment_author_serializer = AuthorSerializer(data=comment_author_json)
+            comment_author_serializer = AuthorSerializer(
+                data=comment_author_json)
             if not comment_author_serializer.is_valid():
                 return Response(comment_author_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            comment_author = comment_author_serializer.upcreate_from_validated_data()
+            comment_author = comment_author_serializer.save()
 
         comment_serializer = CommentSerializer(data=request.data)
         if comment_serializer.is_valid():
             comment = Comment.objects.create(
-                author=comment_author, 
+                author=comment_author,
                 post=post,
                 **comment_serializer.validated_data
             )
@@ -246,6 +253,7 @@ class CommentList(ListCreateAPIView):
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class CommentDetail(APIView):
     def get_serializer_class(self):
@@ -274,6 +282,7 @@ class CommentDetail(APIView):
         serializer = CommentSerializer(comment, many=False)
         return Response(serializer.data)
 
+
 class LikesPostList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
@@ -294,10 +303,11 @@ class LikesPostList(APIView):
         except (Author.DoesNotExist, Post.DoesNotExist):
             error_msg = "Author or Post id not found"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
-        
+
         likes = Like.objects.filter(object=post.url)
         serializer = LikeSerializer(likes, many=True)
         return Response(serializer.data)
+
 
 class LikesCommentList(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -324,10 +334,11 @@ class LikesCommentList(APIView):
         except:
             error_msg = "Comment id is not valid"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
-        
+
         likes = Like.objects.filter(object=comment.url)
         serializer = LikeSerializer(likes, many=True)
         return Response(serializer.data)
+
 
 class LikedList(APIView):
     
@@ -340,15 +351,57 @@ class LikedList(APIView):
         **404**: if the author id does not exist
         """
         try:
-            _ = Author.objects.get(pk=author_id)
+            author = Author.objects.get(id=author_id)
         except:
             error_msg = "Author not found"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
-        
-        likes = Like.objects.filter(author_id=author_id)
+
+        likes = Like.objects.filter(author=author)
         serializer = LikeSerializer(likes, many=True)
         response = {
             "type": "liked",
             "items": serializer.data
         }
         return Response(response)
+
+    @extend_schema(
+        examples=[
+            OpenApiExample('A like object', value={
+                "type": "Like",
+                "summary": "lucas1 liked lucas' post",
+                "author": {
+                    "type": "author",
+                    "id": "http://127.0.0.1:8000/author/eb638f5b-38bb-45e1-a882-310a500c63cd/",
+                    "host": "http://127.0.0.1:8000/",
+                    "displayName": "Lucas1_23333",
+                    "url": "http://127.0.0.1:8000/author/eb638f5b-38bb-45e1-a882-310a500c63cd/",
+                    "github": None
+                },
+                "object": "http://127.0.0.1:8000/author/51914b9c-98c6-4a5c-91bf-fb55a53a92fe/posts/d8fb48fe-a014-49d9-ac4c-bfbdf94b097f/"
+            })
+        ],
+        request={
+            'application/json': OpenApiTypes.OBJECT
+        },
+    )
+    def post(self, request, author_id):
+        """
+        create a like object and send to its target author
+        NOTE: authenticated as the sender author itself
+        """
+        return self.internally_send_like(request, author_id)
+
+    def internally_send_like(self, request, author_id):
+        try:
+            _ = Author.objects.get(id=author_id)
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # get that foreign author's json object first
+        like_ser = LikeSerializer(data=request.data, context={
+                                  'author_id': author_id})
+        if like_ser.is_valid():
+            like = like_ser.save()
+            res = connector_service.notify_like(like)
+            return Response({'res': res, 'like': like_ser.validated_data})
+        return Response(like_ser.errors, status=status.HTTP_400_BAD_REQUEST)

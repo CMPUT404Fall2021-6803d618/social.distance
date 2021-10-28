@@ -67,8 +67,8 @@ class FollowTestCase(TestCase):
             print(serialzier.errors)
         assert serialzier.is_valid()
         f = serialzier.save()
-        assert f.actor.display_name == self.DATA['actor']['displayName']
-        assert f.object.display_name == self.DATA['object']['displayName']
+        self.assertEqual(f.actor.display_name, self.DATA['actor']['displayName'])
+        self.assertEqual(f.object.display_name, self.DATA['object']['displayName'])
 
     def test_inbox_post(self):
         user = User.objects.get(username='test_user')
@@ -78,7 +78,7 @@ class FollowTestCase(TestCase):
 
         inbox_items = new_client.get(
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', format='json')
-        assert len(inbox_items.data) == 1
+        self.assertEqual(len(inbox_items.data), 1)
         status = inbox_items.data[0].pop('status')
         self.assertEqual(status, Follow.FollowStatus.PENDING)
         self.assertDictEqual(inbox_items.data[0], self.DATA)
@@ -115,11 +115,11 @@ class AuthorSerializerTestCase(TestCase):
         assert s.is_valid()
         foreign_author = s.save()  # an Author object
 
-        assert foreign_author.id == self.FOREIGN_AUTHOR_A_DATA['id']
-        assert foreign_author.url == self.FOREIGN_AUTHOR_A_DATA['url']
-        assert foreign_author.display_name == self.FOREIGN_AUTHOR_A_DATA['displayName']
-        assert foreign_author.host == self.FOREIGN_AUTHOR_A_DATA['host']
-        assert foreign_author.github_url == self.FOREIGN_AUTHOR_A_DATA['github']
+        self.assertEqual(foreign_author.id, self.FOREIGN_AUTHOR_A_DATA['id'])
+        self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_A_DATA['url'])
+        self.assertEqual(foreign_author.display_name, self.FOREIGN_AUTHOR_A_DATA['displayName'])
+        self.assertEqual(foreign_author.host, self.FOREIGN_AUTHOR_A_DATA['host'])
+        self.assertEqual(foreign_author.github_url, self.FOREIGN_AUTHOR_A_DATA['github'])
         assert foreign_author.user is None
 
     def test_create_external_author_object_bare(self):
@@ -131,10 +131,10 @@ class AuthorSerializerTestCase(TestCase):
         assert s.is_valid()
         foreign_author = s.save()  # an Author object
 
-        assert foreign_author.id == self.FOREIGN_AUTHOR_B_DATA['id']
-        assert foreign_author.url == self.FOREIGN_AUTHOR_B_DATA['url']
-        assert foreign_author.host == self.FOREIGN_AUTHOR_B_DATA['host']
-        assert foreign_author.display_name == self.FOREIGN_AUTHOR_B_DATA['displayName']
+        self.assertEqual(foreign_author.id, self.FOREIGN_AUTHOR_B_DATA['id'])
+        self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_B_DATA['url'])
+        self.assertEqual(foreign_author.host, self.FOREIGN_AUTHOR_B_DATA['host'])
+        self.assertEqual(foreign_author.display_name, self.FOREIGN_AUTHOR_B_DATA['displayName'])
         assert foreign_author.user is None
 
 
@@ -155,12 +155,13 @@ class AuthorTestCase(TestCase):
         assert "items" in res_content
         content = res_content["items"]
 
-        assert len(content) == 1
+        # content should look like [{'id': 'adfsadfasdfasdf', 'displayName': 'test_username', 'url': '', 'host': '', 'user': 1, 'friends': []}]
+        self.assertEqual(len(content), 1)
 
         # API fields as per spec, not model fields.
-        assert content[0]['displayName'] == 'test_username'
-        assert content[0]['id'] == str(self.author.id)
-        assert res.status_code == 200
+        self.assertEqual(content[0]['displayName'], 'test_username')
+        self.assertEqual(content[0]['id'], str(self.author.id))
+        self.assertEqual(res.status_code, 200)
 
     def test_get_author_detail(self):
         self.setup_single_user_and_author()
@@ -168,9 +169,9 @@ class AuthorTestCase(TestCase):
         content = json.loads(res.content)
 
         # content should look like {'id': 'adfsadfasdfasdf', 'displayName': 'test_username', 'url': '', 'host': '', 'user': 1, 'friends': []}
-        assert content['displayName'] == 'test_username'
-        assert content['id'] == str(self.author.id)
-        assert res.status_code == 200
+        self.assertEqual(content['displayName'], 'test_username')
+        self.assertEqual(content['id'], str(self.author.id))
+        self.assertEqual(res.status_code, 200)
 
     def test_update_author_detail(self):
         # first register a user
@@ -190,12 +191,11 @@ class AuthorTestCase(TestCase):
             "url": "http://127.0.0.1:8000/author/8d2718f8-a957-418c-b826-f51bbb34f57f/"
         }
         '''
-        assert res.data['author']['displayName'] == register_payload['username']
-        assert res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith(
-            'http')
-        assert res.data['author']['type'] == 'author'
+        self.assertEqual(res.data['author']['displayName'], register_payload['username'])
+        self.assertTrue(res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
+        self.assertEqual(res.data['author']['type'], 'author')
         assert res.data['author']['github'] is None
-        assert res.status_code == 200
+        self.assertEqual(res.status_code, 200)
 
         # assert user is created correctly
         user = User.objects.get(username=register_payload['username'])
@@ -210,8 +210,8 @@ class AuthorTestCase(TestCase):
         }
         res = authed_client.post(
             res.data['author']['id'], payload, format='json')
-        assert res.data['displayName'] == payload['displayName']
-        assert res.data['github'] == payload['github']
+        self.assertEqual(res.data['displayName'], payload['displayName'])
+        self.assertEqual(res.data['github'], payload['github'])
 
     def test_local_author_is_internal(self):
         self.setup_single_user_and_author()

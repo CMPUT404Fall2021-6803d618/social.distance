@@ -21,10 +21,10 @@ class AuthTestCase(TestCase):
             "url": "http://127.0.0.1:8000/author/8d2718f8-a957-418c-b826-f51bbb34f57f/"
         }
         '''
-        assert res.data['author']['displayName'] == payload['username']
-        assert res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http')
-        assert res.data['author']['type'] == 'author'
-        assert res.status_code == 200
+        self.assertEqual(res.data['author']['displayName'], payload['username'])
+        self.assertTrue(res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
+        self.assertEqual(res.data['author']['type'], 'author')
+        self.assertEqual(res.status_code, 200)
 
     def test_register_full_happy(self):
         payload = {
@@ -45,10 +45,10 @@ class AuthTestCase(TestCase):
             "url": "http://127.0.0.1:8000/author/8d2718f8-a957-418c-b826-f51bbb34f57f/"
         }
         '''
-        assert res.data['author']['displayName'] == payload['display_name']
-        assert res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http')
-        assert res.data['author']['type'] == 'author'
+        self.assertEqual(res.data['author']['displayName'], payload['display_name'])
+        self.assertTrue(res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
+        self.assertEqual(res.data['author']['type'], 'author')
 
-        assert res.data['author']['github'] == payload['github_url']
-        assert res.status_code == 200
+        self.assertEqual(res.data['author']['github'], payload['github_url'])
+        self.assertEqual(res.status_code, 200)
 

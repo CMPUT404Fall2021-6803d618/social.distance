@@ -14,8 +14,10 @@ class AuthorSerializer(serializers.ModelSerializer):
     type = serializers.CharField(default="author", read_only=True)
     # public id should be the full url
     id = serializers.CharField()
-    displayName = serializers.CharField(source='display_name', required=False, allow_null=True)
-    github = serializers.CharField(source='github_url', required=False, allow_null=True)
+    displayName = serializers.CharField(
+        source='display_name', required=False, allow_null=True)
+    github = serializers.CharField(
+        source='github_url', required=False, allow_null=True)
     url = serializers.URLField(required=False)
     host = serializers.URLField(required=False)
 
@@ -26,8 +28,18 @@ class AuthorSerializer(serializers.ModelSerializer):
         }
 
     def update(self, instance, validated_data):
+        return AuthorSerializer._update(instance, validated_data)
+
+    def create(self, validated_data):
+        return AuthorSerializer._upcreate(validated_data)
+
+    @staticmethod
+    def _update(instance, validated_data):
         """
         method used to modify model, if serializer is used as `partial=True`
+
+        use static method to avoid creating a serializer when data is already valid,
+        which happens often in other objects like Post, Like where Author is nested inside.
         """
         instance.github_url = validated_data.get(
             'github_url', instance.github_url)
@@ -36,21 +48,41 @@ class AuthorSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    def create(self, validated_data):
-        # allow partial update as .save()
-        author, created = Author.objects.update_or_create(**validated_data)
-        return author
-
-    def upcreate_from_validated_data(self):
-        if not self.is_valid():
-            raise exceptions.ParseError("data not valid")
+    @staticmethod
+    def _upcreate(validated_data):
+        """
+        update or create Author from validated data, based on url OR id.
+        """
         try:
-            updated_author = self.update(Author.objects.get(
-                Q(id=self.validated_data['id']) | Q(url=self.validated_data['url'])), self.validated_data)
+            author = Author.objects.get(
+                Q(id=validated_data['id']) | Q(url=validated_data['url']))
+            updated_author = AuthorSerializer._update(author, validated_data)
+        except Author.MultipleObjectsReturned:
+            raise exceptions.ParseError(
+                "multiple author objects with the same id or url is detected. How did you do that?")
         except:
-            updated_author = Author.objects.create(
-                **self.validated_data)
+            updated_author = Author.objects.create(**validated_data)
+
         return updated_author
+
+    @staticmethod
+    def extract_and_upcreate_author(validated_data, author_id=None):
+        """
+        extract 'author' field from validated_data, and
+        - upcreate the author, OR
+        - get the author and do nothing if only author_id is given
+
+        raise error if author doesn't exist by author_id AND no data is given
+        """
+        validated_author_data = validated_data.pop('author') if validated_data.get('author') else None
+        try:
+            if validated_author_data:
+                updated_author = AuthorSerializer._upcreate(validated_author_data)
+            else:
+                updated_author = Author.objects.get(id=author_id)
+            return updated_author
+        except:
+            raise exceptions.ValidationError("author does not exist for the post")
 
     def validate_github(self, value):
         """
@@ -81,8 +113,11 @@ class FollowSerializer(serializers.ModelSerializer):
     object = AuthorSerializer()
 
     def create(self, validated_data):
-        actor, created = Author.objects.update_or_create(**validated_data['actor'])
-        object = Author.objects.get(url=validated_data['object']['url'])
+        actor_data = validated_data.pop('actor')
+        object_data = validated_data.pop('object')
+
+        actor = AuthorSerializer._upcreate(actor_data)
+        object = Author.objects.get(url=object_data['url'])
         return Follow.objects.create(summary=validated_data['summary'], actor=actor, object=object)
 
     def validate_object(self, data):
@@ -92,7 +127,8 @@ class FollowSerializer(serializers.ModelSerializer):
             raise exceptions.ParseError
 
         try:
-            Author.objects.get(Q(id=serializer.validated_data.get('id')) | Q(url=serializer.validated_data.get('url')))
+            Author.objects.get(Q(id=serializer.validated_data.get('id')) | Q(
+                url=serializer.validated_data.get('url')))
         except:
             # the object author does not exist. we cannot create a new author out of nothing
             raise exceptions.ParseError

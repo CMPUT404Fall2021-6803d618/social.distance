@@ -9,7 +9,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
 
-from authors.pagination import FollowingsPagination
+from posts.models import Post, Like
+from posts.serializers import LikeSerializer, PostSerializer
+from nodes.models import connector_service
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -111,6 +113,69 @@ class InboxListView(APIView):
         inbox_objects = author.inbox_objects.all()
         return Response([self.serialize_inbox_item(obj) for obj in inbox_objects])
 
+    # TODO put somewhere else
+    @extend_schema(
+        examples=[
+            OpenApiExample('A post object', value={
+                "type": "post",
+                "id": "http://127.0.0.1:8000/author/51914b9c-98c6-4a5c-91bf-fb55a53a92fe/posts/d8fb48fe-a014-49d9-ac4c-bfbdf94b097f/",
+                "title": "Post1",
+                "source": "",
+                "origin": "",
+                "description": "description for post1",
+                "contentType": "text/markdown",
+                "author": {
+                    "type": "author",
+                    "id": "http://127.0.0.1:8000/author/51914b9c-98c6-4a5c-91bf-fb55a53a92fe/",
+                    "host": "http://127.0.0.1:8000/",
+                    "displayName": "Updated!!!",
+                    "url": "http://127.0.0.1:8000/author/51914b9c-98c6-4a5c-91bf-fb55a53a92fe/",
+                    "github": None
+                },
+                "content": "# Hello",
+                "count": 0,
+                "published": "2021-10-22T20:58:18.072618Z",
+                "visibility": "PUBLIC",
+                "unlisted": False
+            }),
+            OpenApiExample('A like object', value={
+                "type": "Like",
+                "summary": "string",
+                "author": {
+                    "type": "author",
+                    "id": "string",
+                    "host": "string",
+                    "displayName": "string",
+                    "url": "string",
+                    "github": "string"
+                },
+                "object": "string"
+            }),
+            OpenApiExample('A friend request object', value={
+                "type": "Follow",
+                "summary": "Greg wants to follow Lara",
+                "actor": {
+                    "type": "author",
+                    "id": "http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                    "url": "http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
+                    "host": "http://127.0.0.1:5454/",
+                    "displayName": "Greg Johnson",
+                    "github": "http://github.com/gjohnson"
+                },
+                "object": {
+                    "type": "author",
+                    "id": "http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
+                    "host": "http://127.0.0.1:5454/",
+                    "displayName": "Lara Croft",
+                    "url": "http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
+                    "github": "http://github.com/laracroft"
+                }
+            }),
+        ],
+        request={
+            'application/json': OpenApiTypes.OBJECT
+        },
+    )
     def post(self, request, author_id):
         """
         ## Description:  
@@ -126,7 +191,7 @@ class InboxListView(APIView):
             raise exceptions.NotFound
 
         serializer = self.deserialize_inbox_data(
-            self.request.data, context={'author', author})
+            self.request.data, context={'author': author})
         if serializer.is_valid():
             # save the item to database, could be post or like or FR
             item = serializer.save()
@@ -140,16 +205,22 @@ class InboxListView(APIView):
         model_class = item.content_type.model_class()
         if model_class is Follow:
             serializer = FollowSerializer
-        # TODO post, like
+        elif model_class is Post:
+            serializer = PostSerializer
+        elif model_class is Like:
+            serializer = LikeSerializer
         return serializer(item.content_object, context=context).data
 
     def deserialize_inbox_data(self, data, context={}):
         if not data.get('type'):
             raise exceptions.ParseError
         type = data.get('type')
-        if type == 'Follow':
+        if type == Follow.get_api_type():
             serializer = FollowSerializer
-        # TODO post, like
+        elif type == Post.get_api_type():
+            serializer = PostSerializer
+        elif type == Like.get_api_type():
+            serializer = LikeSerializer
 
         return serializer(data=data, context=context)
 
@@ -183,7 +254,7 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
     foreign_author_ser = AuthorSerializer(data=foreign_author_json)
 
     if foreign_author_ser.is_valid():
-        foreign_author = foreign_author_ser.upcreate_from_validated_data()
+        foreign_author = foreign_author_ser.save()
 
         if Follow.objects.filter(actor=author, object=foreign_author):
             raise exceptions.PermissionDenied("duplicate follow object exists for the authors")
@@ -195,12 +266,8 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
         )
 
         follow.save()
-
-        follow_ser = FollowSerializer(follow)
-        # TODO refactor into notify service, server auth
-        res = requests.post(foreign_author_url + 'inbox/',
-                            json=follow_ser.data).json()
-        return Response(follow_ser.data)
+        connector_service.notify_follow(follow)
+        return Response(FollowSerializer(follow).data)
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -320,18 +387,25 @@ class FollowerDetail(APIView):
             follower = existing_follower_set.get()
         else:
             # external author: upcreate it first
-            follower_serializer = self.get_follower_serializer_from_request(request, foreign_author_url)
+            follower_serializer = self.get_follower_serializer_from_request(
+                request, foreign_author_url)
             if follower_serializer.is_valid():
                 if foreign_author_url != follower_serializer.validated_data['url']:
                     return Response("payload author's url does not match that in request url", status=status.HTTP_400_BAD_REQUEST)
-                follower = follower_serializer.upcreate_from_validated_data()
+                follower = follower_serializer.save()
             else:
                 return Response(follower_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # create the Follow object for this relationship, if not exist already
-        if not Follow.objects.filter(object=author, actor=follower):
-            follower_following = Follow.objects.create(
-                object=author, actor=follower)
+        # accept the follow request (activate the relationship), or create it if not exist already
+        try:
+            pending_follow = Follow.objects.get(object=author, actor=follower, status=Follow.FollowStatus.PENDING)
+            pending_follow.status = Follow.FollowStatus.ACCEPTED
+            pending_follow.save()
+        except Follow.DoesNotExist:
+            _ = Follow.objects.create(
+                object=author, actor=follower, status=Follow.FollowStatus.ACCEPTED)
+        except Follow.MultipleObjectsReturned:
+            raise exceptions.ParseError("There exists multiple Follow objects. Please report how you reached this error")
         return Response()
 
     def get_follower_serializer_from_request(self, request, foreign_author_url):
@@ -341,7 +415,7 @@ class FollowerDetail(APIView):
             # try fetch the foreign user first, upcreate it locally and do it again.
             # TODO server2server basic auth, refactor into server2server connection pool/service
             res = requests.get(foreign_author_url)
-            follower_serializer = AuthorSerializer(data=res.text)
+            follower_serializer = AuthorSerializer(data=res.json())
         return follower_serializer
 
 class FollowingList(ListAPIView):

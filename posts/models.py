@@ -52,7 +52,8 @@ class Post(models.Model):
     def get_public_id(self):
         return self.url or self.id
 
-    def get_api_type(self):
+    @staticmethod
+    def get_api_type():
         return 'post'
 
     # used internally
@@ -85,7 +86,8 @@ class Comment(models.Model):
     def get_public_id(self):
         return self.url or self.id
 
-    def get_api_type(self):
+    @staticmethod
+    def get_api_type():
         return 'comment'
 
     # used internally
@@ -110,7 +112,8 @@ class Like(models.Model):
     # object can either be a post or comment
     object = models.URLField()
 
-    def get_api_type(self):
+    @staticmethod
+    def get_api_type():
         return 'Like'
 
     # https://docs.djangoproject.com/en/3.2/ref/models/constraints/#django.db.models.UniqueConstraint
