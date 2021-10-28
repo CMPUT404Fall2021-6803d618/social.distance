@@ -92,11 +92,12 @@ class InboxListView(APIView):
 
     def get(self, request, author_id):
         """
-        ## Description:  
-        Get all objects for the current user. user jwt auth required    
-        ## Responses:  
-        **200**: for successful GET request  
-        **403**: if the request user is not the same as the author  
+        ## Description:
+        Get all objects for the current user. user jwt auth required
+        ## Responses:
+        **200**: for successful GET request <br>
+        **401**: if the authenticated user is not the post's poster <br>
+        **403**: if the request user is not the same as the author <br> 
         **404**: if the author id does not exist
         """
         try:
@@ -105,10 +106,9 @@ class InboxListView(APIView):
             raise exceptions.NotFound
 
         # has to be the current user
-        try:
-            assert author.user == self.request.user
-        except:
-            raise exceptions.PermissionDenied
+        # and author without a user is a foreign author
+        if not author.user or request.user != author.user:
+            raise exceptions.AuthenticationFailed
 
         inbox_objects = author.inbox_objects.all()
         return Response([self.serialize_inbox_item(obj) for obj in inbox_objects])
@@ -363,15 +363,18 @@ class FollowerDetail(APIView):
     )
     def put(self, request, author_id, foreign_author_url):
         """
-        ## Description:  
-        Add a follower (must be authenticated)   
+        ## Description: 
+        Add a follower (must be authenticated)  
         ## Responses:  
-        **200**: for successful PUT request  
-        **400**: if the payload failed the serializer check  
+        **200**: for successful PUT request <br>
+        **400**: if the payload failed the serializer check <br>
+        **401**: if the authenticated user is not the post's poster <br> 
         **404**: if the author id does not exist
         """
         try:
             author = Author.objects.get(id=author_id)
+            if not author.user or request.user != author.user:
+                raise exceptions.AuthenticationFailed
         except:
             raise exceptions.NotFound
 
