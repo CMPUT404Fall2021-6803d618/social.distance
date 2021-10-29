@@ -8,8 +8,8 @@ urlpatterns = [
     # server to server API
     path('<str:author_id>/posts/<str:post_id>/',
          PostDetail.as_view(), name="post-detail"),
-    path('<str:author_id>/inbox/', InboxListView.as_view(), name="author-inbox"),
-    path('<str:author_id>/inbox/<str:inbox_id>/', inbox_detail_delete, name="author-inbox-delete"),
+    path('<str:author_id>/inbox/', InboxListView.as_view(), name="inbox-list"),
+    path('<str:author_id>/inbox/<str:inbox_id>/', InboxDetailView.as_view(), name="inbox-detail"),
     path('<str:author_id>/', AuthorDetail.as_view(), name="author-detail"),
 
     path('<str:author_id>/posts/<str:post_id>/', PostDetail.as_view(), name="post-detail"),

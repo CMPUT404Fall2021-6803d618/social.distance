@@ -3,7 +3,7 @@ from urllib.parse import unquote
 import requests
 from requests.models import HTTPBasicAuth
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, ListCreateAPIView, get_object_or_404
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveDestroyAPIView, get_object_or_404
 from rest_framework.response import Response
 from rest_framework import exceptions, status, permissions
 from rest_framework.decorators import action, api_view, permission_classes
@@ -88,7 +88,31 @@ class AuthorDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class InboxListView(ListCreateAPIView):
+class InboxSerializerMixin:
+    def serialize_inbox_item(self, item, context={}):
+        model_class = item.content_type.model_class()
+        if model_class is Follow:
+            serializer = FollowSerializer
+        elif model_class is Post:
+            serializer = PostSerializer
+        elif model_class is Like:
+            serializer = LikeSerializer
+        return serializer(item.content_object, context=context).data
+
+    def deserialize_inbox_data(self, data, context={}):
+        if not data.get('type'):
+            raise exceptions.ParseError
+        type = data.get('type')
+        if type == Follow.get_api_type():
+            serializer = FollowSerializer
+        elif type == Post.get_api_type():
+            serializer = PostSerializer
+        elif type == Like.get_api_type():
+            serializer = LikeSerializer
+
+        return serializer(data=data, context=context)
+
+class InboxListView(ListCreateAPIView, InboxSerializerMixin):
     # permission_classes = [permissions.IsAuthenticated]
     pagination_class = InboxObjectsPagination
 
@@ -204,41 +228,70 @@ class InboxListView(ListCreateAPIView):
             return Response({'req': self.request.data, 'saved': model_to_dict(item_as_inbox)})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def serialize_inbox_item(self, item, context={}):
-        model_class = item.content_type.model_class()
-        if model_class is Follow:
-            serializer = FollowSerializer
-        elif model_class is Post:
-            serializer = PostSerializer
-        elif model_class is Like:
-            serializer = LikeSerializer
-        return serializer(item.content_object, context=context).data
-
-    def deserialize_inbox_data(self, data, context={}):
-        if not data.get('type'):
-            raise exceptions.ParseError
-        type = data.get('type')
-        if type == Follow.get_api_type():
-            serializer = FollowSerializer
-        elif type == Post.get_api_type():
-            serializer = PostSerializer
-        elif type == Like.get_api_type():
-            serializer = LikeSerializer
-
-        return serializer(data=data, context=context)
 
 
-@api_view(['DELETE'])
-@permission_classes([permissions.IsAuthenticated])
-def inbox_detail_delete(request, author_id, inbox_id):
-    try:
-        author = Author.objects.get(id=author_id)
-        inbox_object = InboxObject.objects.get(id=inbox_id)
-    except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
+class InboxDetailView(RetrieveDestroyAPIView, InboxSerializerMixin):
+    permission_classes = [permissions.IsAuthenticated]
 
-    inbox_object.delete()
-    return Response(status=status.HTTP_204_NO_CONTENT)
+    def get(self, request, author_id, inbox_id):
+        """
+        ## Description:
+        Get an inbox item by id
+        ## Responses:
+        **200**: for successful GET request <br>
+        **404**: if the author id or the inbox id does not exist
+        """
+        try:
+            author = Author.objects.get(id=author_id)
+        except:
+            raise exceptions.NotFound('author not found')
+
+        try:
+            inbox_item = author.inbox_objects.get(id=inbox_id)
+        except:
+            raise exceptions.NotFound('inbox object not found')
+
+        # has to be the current user
+        # and author without a user is a foreign author
+        if not author.user or request.user != author.user:
+            raise exceptions.AuthenticationFailed
+
+        # can only see your own inbox items!
+        if not inbox_item.author == author:
+            raise exceptions.NotFound('inbox object not found')
+
+        return Response(self.serialize_inbox_item(inbox_item))
+    
+    def delete(self, request, author_id, inbox_id):
+        """
+        ## Description:
+        Delete an inbox item by id
+        ## Responses:
+        **200**: for successful DELETE request <br>
+        **404**: if the author id or the inbox id does not exist
+        """
+        try:
+            author = Author.objects.get(id=author_id)
+        except:
+            raise exceptions.NotFound('author not found')
+
+        try:
+            inbox_item = author.inbox_objects.get(id=inbox_id)
+        except:
+            raise exceptions.NotFound('inbox object not found')
+
+        # has to be the current user
+        # and author without a user is a foreign author
+        if not author.user or request.user != author.user:
+            raise exceptions.AuthenticationFailed
+
+        # can only delete your own inbox items!
+        if not inbox_item.author == author:
+            raise exceptions.NotFound('inbox object not found')
+
+        inbox_item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+ 
 
 @extend_schema(
     responses=FollowSerializer

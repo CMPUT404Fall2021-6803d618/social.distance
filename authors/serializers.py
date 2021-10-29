@@ -112,9 +112,6 @@ class FollowSerializer(serializers.ModelSerializer):
     actor = AuthorSerializer()
     object = AuthorSerializer()
 
-    # appeared as an array of inbox id's, in hopefully all cases, it's an array of one
-    inbox_object = serializers.PrimaryKeyRelatedField(many=True, read_only=True, allow_null=True)
-
     def create(self, validated_data):
         actor_data = validated_data.pop('actor')
         object_data = validated_data.pop('object')
@@ -122,6 +119,16 @@ class FollowSerializer(serializers.ModelSerializer):
         actor = AuthorSerializer._upcreate(actor_data)
         object = Author.objects.get(url=object_data['url'])
         return Follow.objects.create(summary=validated_data['summary'], actor=actor, object=object)
+    
+    def to_representation(self, instance):
+        try:
+            inbox_object = InboxObject.objects.get(follow=instance, author=instance.object)
+        except:
+            inbox_object = None
+        return {
+            **super().to_representation(instance),
+            'inbox_object': inbox_object.id if inbox_object else None
+        }
 
     def validate_object(self, data):
         serializer = AuthorSerializer(data=data)

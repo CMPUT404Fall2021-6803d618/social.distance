@@ -82,7 +82,7 @@ class FollowTestCase(TestCase):
         self.assertEqual(len(items), 1)
         status = items[0].pop('status')
         self.assertEqual(status, Follow.FollowStatus.PENDING)
-        inbox_object_id = items[0].pop('inbox_object')[0]
+        inbox_object_id = items[0].pop('inbox_object')
         inbox_object_in_db = InboxObject.objects.get(id=inbox_object_id)
         self.assertIsNotNone(inbox_object_in_db)
         self.assertDictEqual(items[0], self.DATA)
