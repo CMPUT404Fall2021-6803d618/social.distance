@@ -257,7 +257,7 @@ class InboxDetailView(RetrieveDestroyAPIView, InboxSerializerMixin):
             raise exceptions.AuthenticationFailed
 
         # can only see your own inbox items!
-        if not inbox_item.author == author:
+        if inbox_item.author != author:
             raise exceptions.NotFound('inbox object not found')
 
         return Response(self.serialize_inbox_item(inbox_item))
@@ -267,7 +267,7 @@ class InboxDetailView(RetrieveDestroyAPIView, InboxSerializerMixin):
         ## Description:
         Delete an inbox item by id
         ## Responses:
-        **200**: for successful DELETE request <br>
+        **204**: for successful DELETE request <br>
         **404**: if the author id or the inbox id does not exist
         """
         try:
@@ -286,7 +286,7 @@ class InboxDetailView(RetrieveDestroyAPIView, InboxSerializerMixin):
             raise exceptions.AuthenticationFailed
 
         # can only delete your own inbox items!
-        if not inbox_item.author == author:
+        if inbox_item.author != author:
             raise exceptions.NotFound('inbox object not found')
 
         inbox_item.delete()
@@ -446,7 +446,6 @@ class FollowerDetail(APIView):
         except Author.DoesNotExist:
             raise exceptions.NotFound("author does not exist")
 
-        print(">>> author: ", author)
         # decode first if it's uri-encoded url
         foreign_author_url = unquote(foreign_author_url)
         existing_follower_set = Author.objects.filter(url=foreign_author_url)
