@@ -257,7 +257,6 @@ class CommentList(ListCreateAPIView):
             comment.update_fields_with_request(request)
             serializer = CommentSerializer(comment, many=False)
             return Response(serializer.data)
-            # return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
