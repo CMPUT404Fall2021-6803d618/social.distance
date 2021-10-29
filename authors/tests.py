@@ -78,13 +78,14 @@ class FollowTestCase(TestCase):
 
         inbox_items = new_client.get(
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', format='json')
-        self.assertEqual(len(inbox_items.data), 1)
-        status = inbox_items.data[0].pop('status')
+        items = inbox_items.data.get('items')
+        self.assertEqual(len(items), 1)
+        status = items[0].pop('status')
         self.assertEqual(status, Follow.FollowStatus.PENDING)
-        inbox_object_id = inbox_items.data[0].pop('inbox_object')[0]
+        inbox_object_id = items[0].pop('inbox_object')[0]
         inbox_object_in_db = InboxObject.objects.get(id=inbox_object_id)
         self.assertIsNotNone(inbox_object_in_db)
-        self.assertDictEqual(inbox_items.data[0], self.DATA)
+        self.assertDictEqual(items[0], self.DATA)
 
         local_author = Author.objects.get(
             id='9de17f29c12e8f97bcbbd34cc908f1baba40658e')

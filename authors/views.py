@@ -88,8 +88,9 @@ class AuthorDetail(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class InboxListView(APIView):
+class InboxListView(ListCreateAPIView):
     # permission_classes = [permissions.IsAuthenticated]
+    pagination_class = InboxObjectsPagination
 
     def get(self, request, author_id):
         """
@@ -112,7 +113,8 @@ class InboxListView(APIView):
             raise exceptions.AuthenticationFailed
 
         inbox_objects = author.inbox_objects.all()
-        return Response([self.serialize_inbox_item(obj) for obj in inbox_objects])
+        paginated_inbox_objects = self.paginate_queryset(inbox_objects)
+        return self.get_paginated_response([self.serialize_inbox_item(obj) for obj in paginated_inbox_objects])
 
     # TODO put somewhere else
     @extend_schema(
@@ -440,6 +442,7 @@ class FollowerDetail(APIView):
 class FollowingList(ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     serializer_class = FollowSerializer
+    pagination_class = FollowingsPagination
 
     def get_queryset(self):
         try:
