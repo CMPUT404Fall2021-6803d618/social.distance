@@ -36,7 +36,6 @@ class Post(models.Model):
     unlisted = models.BooleanField(default=False)
     visibility = models.CharField(max_length=10, choices=Visibility.choices, default=Visibility.PUBLIC)
 
-    inbox_object = GenericRelation(InboxObject, related_query_name='post')
     # TODO: As an author, posts I create can link to images.
     # TODO: As an author, posts I create can be images..
 
@@ -115,8 +114,6 @@ class Like(models.Model):
     author = models.ForeignKey(Author, related_name = "likes", on_delete=models.CASCADE)
     # object can either be a post or comment
     object = models.URLField()
-
-    inbox_object = GenericRelation(InboxObject, related_query_name='like')
 
     @staticmethod
     def get_api_type():

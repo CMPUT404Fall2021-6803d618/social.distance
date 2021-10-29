@@ -74,17 +74,17 @@ class Follow(models.Model):
         PENDING = "PENDING"
         ACCEPTED = "ACCEPTED"
 
+    id = models.CharField(primary_key=True, editable=False, default=uuid.uuid4, max_length=200)
     summary = models.CharField(max_length=200, default="")
-
     status = models.CharField(max_length=20, choices=FollowStatus.choices, default=FollowStatus.PENDING)
 
     # Author who is being followed by the follower. corresponds to Author.follower.all()
     object = models.ForeignKey(Author, related_name="followers", null=False, on_delete=models.CASCADE)
-
     # URL of Author who is following the followee
     actor = models.ForeignKey(Author, related_name="followings", null=False, on_delete=models.CASCADE)
 
     # https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/#reverse-generic-relations
+    # needed so we can query InboxObject with follow=this_follow
     inbox_object = GenericRelation('InboxObject', related_query_name='follow')
 
     @staticmethod

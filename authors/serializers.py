@@ -146,7 +146,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follow
-        fields = ['summary', 'actor', 'object', 'type', 'status', 'inbox_object']
+        fields = ['summary', 'actor', 'object', 'type', 'status']
 
 
 class InboxObjectSerializer(serializers.ModelSerializer):

@@ -80,8 +80,10 @@ class FollowTestCase(TestCase):
             '/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e/inbox/', format='json')
         items = inbox_items.data.get('items')
         self.assertEqual(len(items), 1)
+
         status = items[0].pop('status')
         self.assertEqual(status, Follow.FollowStatus.PENDING)
+
         inbox_object_id = items[0].pop('inbox_object')
         inbox_object_in_db = InboxObject.objects.get(id=inbox_object_id)
         self.assertIsNotNone(inbox_object_in_db)
