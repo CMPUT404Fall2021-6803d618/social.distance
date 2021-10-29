@@ -1,4 +1,5 @@
 from drf_spectacular.types import OpenApiTypes
+from urllib.parse import unquote
 import requests
 from requests.models import HTTPBasicAuth
 from rest_framework.views import APIView
@@ -266,7 +267,7 @@ def internally_send_friend_request(request, author_id, foreign_author_url):
         )
 
         follow.save()
-        connector_service.notify_follow(follow)
+        connector_service.notify_follow(follow, request=request)
         return Response(FollowSerializer(follow).data)
 
     return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -286,7 +287,7 @@ class FollowerList(ListAPIView):
         except:
             raise exceptions.NotFound
         # find all author following this author
-        return Author.objects.filter(followings__object=author)
+        return Author.objects.filter(followings__object=author, followings__status=Follow.FollowStatus.ACCEPTED)
 
     def get(self, request, *args, **kwargs):
         """
@@ -378,6 +379,8 @@ class FollowerDetail(APIView):
         except:
             raise exceptions.NotFound
 
+        # decode first if it's uri-encoded url
+        foreign_author_url = unquote(foreign_author_url)
         existing_follower_set = Author.objects.filter(url=foreign_author_url)
 
         # sanity check: muliple cached foreign authors with the same url exists. break.
