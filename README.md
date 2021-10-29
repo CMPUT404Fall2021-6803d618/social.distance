@@ -1,17 +1,26 @@
 # social.distance
+## Overview
+`social.distance` is a project forked from [CMPUT404-project-socialdistribution](https://github.com/abramhindle/CMPUT404-project-socialdistribution). It is a course project for CMPUT 404, Fall 2021.
 
-`social.distance` is a project forked from [CMPUT404-project-socialdistribution](https://github.com/abramhindle/CMPUT404-project-socialdistribution). It is a course project for CMPUT404, Fall2021.
-
-See project.org (plain-text/org-mode) for a description of the project.
+See [project.org](https://github.com/CMPUT404Fall2021-6803d618/social.distance/blob/master/project.org) (plain-text/org-mode) for a description of the project.
 
 CMPUT404F21T01 Members:
 
 Format: Name (github id, ccid)
-- Lucas Zeng (c25vdw, zichang)
-- Ze Hui Peng (zhpeng811, zhpeng)
-- Sang Le (sqle157, sqle)
-- Khang Vuong (kdvuong, kdvuong)
-- Quoc Trung Tran (QuocTrungTran, quoctrun)
+- Lucas Zeng ([c25vdw](https://github.com/c25vdw), zichang)
+- Ze Hui Peng ([zhpeng811](https://github.com/zhpeng811), zhpeng)
+- Sang Le ([sqle157](https://github.com/sqle157), sqle)
+- Khang Vuong ([kdvuong](https://github.com/kdvuong), kdvuong)
+- Quoc Trung Tran ([QuocTrungTran](https://github.com/QuocTrungTran), quoctrun)
+
+## Deploying API
+
+Heroku project at https://social-distance-api.herokuapp.com/ will update when `master` is updated by a merge or direct push.
+
+## Front End Repository
+You can find the front end repository for this project by going to our [organization page](https://github.com/CMPUT404Fall2021-6803d618), or you can click [here](https://github.com/CMPUT404Fall2021-6803d618/frontend) to redirect.
+
+The frontend Heroku deployment is at https://social-distance-web.herokuapp.com/
 
 ## Development Setup
 
@@ -35,10 +44,6 @@ You can generate a `SECRET_KEY` [here](https://djecrety.ir/)
 
 3. `pip install -r requirements.txt`
 
-## Deploying API
-
-heroku project at https://social-distance-api.herokuapp.com/ will update when `master` is updated by a merge or direct push.
-
 ## Contributing
 
 Send a pull request and be sure to update this file with your name.
@@ -51,6 +56,11 @@ All text is licensed under the CC-BY-SA 4.0 http://creativecommons.org/licenses/
 
 Contributors:
 
+    Lucas Zeng
+    Ze Hui Peng
+    Sang Le
+    Khang Vuong
+    Quoc Trung Tran
     Karim Baaba
     Ali Sajedi
     Kyle Richelhoff

@@ -215,7 +215,7 @@ class CommentList(ListCreateAPIView):
         ## Description:
         Add a comment to the author_id's post post_id
         ## Responses:
-        **204**: for successful POST request <br>
+        **200**: for successful POST request <br>
         **400**: if the payload failed the serializer check <br>
         **404**: if the author or post id does not exist
         """
@@ -255,7 +255,8 @@ class CommentList(ListCreateAPIView):
                 **comment_serializer.validated_data
             )
             comment.update_fields_with_request(request)
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            serializer = CommentSerializer(comment, many=False)
+            return Response(serializer.data)
         else:
             return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
