@@ -1,9 +1,12 @@
 import uuid
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from authors.models import Author
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse 
 from django.contrib.postgres import fields
+
+from authors.models import InboxObject
 
 class Post(models.Model):
     # https://docs.djangoproject.com/en/3.2/ref/models/fields/#enumeration-types

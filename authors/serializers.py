@@ -119,6 +119,16 @@ class FollowSerializer(serializers.ModelSerializer):
         actor = AuthorSerializer._upcreate(actor_data)
         object = Author.objects.get(url=object_data['url'])
         return Follow.objects.create(summary=validated_data['summary'], actor=actor, object=object)
+    
+    def to_representation(self, instance):
+        try:
+            inbox_object = InboxObject.objects.get(follow=instance, author=instance.object)
+        except:
+            inbox_object = None
+        return {
+            **super().to_representation(instance),
+            'inbox_object': inbox_object.id if inbox_object else None
+        }
 
     def validate_object(self, data):
         serializer = AuthorSerializer(data=data)

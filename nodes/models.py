@@ -8,11 +8,14 @@ import requests
 from requests.models import HTTPBasicAuth, Response
 from requests import Request
 from rest_framework import exceptions
-from authors.models import Author, Follow
+from authors.models import Author, Follow, InboxObject
 from authors.serializers import FollowSerializer
 
 from posts.models import Like, Post
 from posts.serializers import LikeSerializer, PostSerializer
+
+import logging
+logger = logging.getLogger(__name__)
 
 global_session = requests.Session()
     
@@ -37,7 +40,7 @@ def silent_500(fn):
         try:
             return fn(*args, **kwargs)
         except requests.exceptions.RequestException as e:
-            print("node connector error: ", e)
+            logger.error("node notifying error: ", e)
     return wrapper
 
 class ConnectorService:
@@ -47,36 +50,62 @@ class ConnectorService:
         if len(url_results) != 1:
             raise exceptions.APIException(f"cannot match the author endpoint from the url: {url}")
         host, author_path = url_results[0]
-        return host + author_path + 'inbox/', host
+        # returns (host_url, inbox_url, author_url)
+        return host + author_path + 'inbox/', host, host + author_path
 
     @silent_500
-    def notify_like(self, like: Like):
-        inbox_url, host_url = self.get_inbox_and_host_from_url(like.object)
-        node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
-        res = global_session.post(inbox_url, json=LikeSerializer(like).data, auth=node.get_basic_auth())
-        return res.content
+    def notify_like(self, like: Like, request: Request = None):
+        inbox_url, host_url, author_url = self.get_inbox_and_host_from_url(like.object)
+
+        if not self._same_host_and_save_to_inbox(request, host_url, inbox_item=like, inbox_author_url=author_url):
+            self._find_node_and_post_to_inbox(inbox_url, host_url, LikeSerializer(like).data)
 
     @silent_500
-    def notify_post(self, post: Post):
+    def notify_post(self, post: Post, request: Request = None):
         # get all follwers and their endpoints
         followers = Author.objects.filter(followings__object=post.author)
 
-        results = []
         # post the post to each of the followers' inboxes
         for follower in followers:
-            inbox_url, host_url = self.get_inbox_and_host_from_url(follower.url)
-            node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
-            res = global_session.post(inbox_url, json=PostSerializer(post).data, auth=node.get_basic_auth())
-            results.append(res.content)
-        return results
+            inbox_url, host_url, _ = self.get_inbox_and_host_from_url(follower.url)
+            if not self._same_host_and_save_to_inbox(request, host_url, inbox_item=post, inbox_author=follower):
+                self._find_node_and_post_to_inbox(inbox_url, host_url, PostSerializer(post).data)
 
     @silent_500
-    def notify_follow(self, follow: Follow):
+    def notify_follow(self, follow: Follow, request=None):
         target_author = follow.object
 
-        inbox_url, host_url = self.get_inbox_and_host_from_url(target_author.url)
+        inbox_url, host_url, _ = self.get_inbox_and_host_from_url(target_author.url)
+        if not self._same_host_and_save_to_inbox(request, host_url, inbox_item=follow, inbox_author=target_author):
+            self._find_node_and_post_to_inbox(inbox_url, host_url, FollowSerializer(follow).data)
+
+    @staticmethod
+    def _same_host_and_save_to_inbox(request, host_url, inbox_author_url=None, inbox_item=None, inbox_author=None):
+        """
+        Check if the host_url is the same as the request's domain.
+        If it is, save the inbox_item to the author's inbox and return True. Later step should skip further notifications.
+        If it is not, do nothing and return False.
+
+        If inbox_author_url is given, we grab that local author if needed. Use it as inbox_author instead.
+        """
+        domain = request.get_host() # points to the server root
+        if domain in host_url:
+            # find the local inbox author
+            local_inbox_author = Author.objects.get(Q(url=inbox_author_url) | Q(url=inbox_author_url[:-1])) if inbox_author_url else None
+            # wrap the item in an inboxObject, links with author
+            item_as_inbox = InboxObject(content_object=inbox_item, author=inbox_author or local_inbox_author)
+            item_as_inbox.save()
+            return True
+        else:
+            return False
+
+    @staticmethod
+    @silent_500
+    def _find_node_and_post_to_inbox(inbox_url, host_url, data):
+        # find the node that matches the url
         node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
-        res = global_session.post(inbox_url, json=FollowSerializer(follow).data, auth=node.get_basic_auth())
-        return res.content
+        # post the data to the inbox on the node
+        global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
+
         
 connector_service = ConnectorService()

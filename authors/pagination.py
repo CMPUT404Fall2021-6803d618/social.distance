@@ -7,3 +7,6 @@ class FollowingsPagination(PageSizePagination):
     type = 'followings'
 class FollowersPagination(PageSizePagination):
     type = 'followers'
+
+class InboxObjectsPagination(PageSizePagination):
+    type = 'inbox_objects'

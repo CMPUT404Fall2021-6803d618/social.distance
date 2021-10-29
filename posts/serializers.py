@@ -48,7 +48,7 @@ class PostSerializer(serializers.ModelSerializer):
             'comments',
             'published',
             'visibility',
-            'unlisted'
+            'unlisted',
         ]
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -79,7 +79,6 @@ class LikeSerializer(serializers.ModelSerializer):
     
     # author will be created and validated separately 
     author = AuthorSerializer(required=False)
-
     object = serializers.URLField()
 
     def create(self, validated_data):
@@ -92,5 +91,5 @@ class LikeSerializer(serializers.ModelSerializer):
             "type",
             "summary",
             "author",
-            "object"
+            "object",
         ]

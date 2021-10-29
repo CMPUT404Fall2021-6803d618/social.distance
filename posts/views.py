@@ -79,7 +79,7 @@ class PostDetail(APIView):
         if serializer.is_valid():
             post = serializer.save()
             post.update_fields_with_request(request)
-            connector_service.notify_post(post) # TODO should we notify on update post?
+            connector_service.notify_post(post, request=request) # TODO should we notify on update post?
             return Response(serializer.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -127,7 +127,7 @@ class PostDetail(APIView):
             post = Post.objects.create(**serializer.validated_data, author=author, id=post_id)
             post.update_fields_with_request(request)
 
-            connector_service.notify_post(post)
+            connector_service.notify_post(post, request=request)
             serializer = PostSerializer(post, many=False)
             return Response(serializer.data)
         else:
@@ -392,6 +392,7 @@ class LikedList(APIView):
     )
     def post(self, request, author_id):
         """
+        **[Internal]** <br>
         ## Description:
         create a like object and send to its target author <br>
         NOTE: authenticated as the sender author itself
@@ -413,6 +414,6 @@ class LikedList(APIView):
                                   'author_id': author_id})
         if like_ser.is_valid():
             like = like_ser.save()
-            res = connector_service.notify_like(like)
+            res = connector_service.notify_like(like, request=request)
             return Response({'res': res, 'like': like_ser.validated_data})
         return Response(like_ser.errors, status=status.HTTP_400_BAD_REQUEST)
