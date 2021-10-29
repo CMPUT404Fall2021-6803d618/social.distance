@@ -112,6 +112,9 @@ class FollowSerializer(serializers.ModelSerializer):
     actor = AuthorSerializer()
     object = AuthorSerializer()
 
+    # appeared as an array of inbox id's, in hopefully all cases, it's an array of one
+    inbox_object = serializers.PrimaryKeyRelatedField(many=True, read_only=True, allow_null=True)
+
     def create(self, validated_data):
         actor_data = validated_data.pop('actor')
         object_data = validated_data.pop('object')
@@ -136,7 +139,7 @@ class FollowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Follow
-        fields = ['summary', 'actor', 'object', 'type', 'status']
+        fields = ['summary', 'actor', 'object', 'type', 'status', 'inbox_object']
 
 
 class InboxObjectSerializer(serializers.ModelSerializer):

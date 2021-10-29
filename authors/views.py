@@ -226,6 +226,18 @@ class InboxListView(APIView):
         return serializer(data=data, context=context)
 
 
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def inbox_detail_delete(request, author_id, inbox_id):
+    try:
+        author = Author.objects.get(id=author_id)
+        inbox_object = InboxObject.objects.get(id=inbox_id)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    inbox_object.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
 @extend_schema(
     responses=FollowSerializer
 )
@@ -345,7 +357,7 @@ class FollowerDetail(APIView):
                 f"foreign author at {foreign_author_url} is not a follower of the local author")
 
         follower_following.delete()
-        return Response()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(
         examples=[
@@ -376,9 +388,10 @@ class FollowerDetail(APIView):
             author = Author.objects.get(id=author_id)
             if not author.user or request.user != author.user:
                 raise exceptions.AuthenticationFailed
-        except:
-            raise exceptions.NotFound
+        except Author.DoesNotExist:
+            raise exceptions.NotFound("author does not exist")
 
+        print(">>> author: ", author)
         # decode first if it's uri-encoded url
         foreign_author_url = unquote(foreign_author_url)
         existing_follower_set = Author.objects.filter(url=foreign_author_url)

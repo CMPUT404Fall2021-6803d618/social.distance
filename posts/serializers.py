@@ -24,6 +24,9 @@ class PostSerializer(serializers.ModelSerializer):
     # e.g. 'text/markdown'
     contentType = serializers.ChoiceField(choices=Post.ContentType.choices, source='content_type')
 
+    # appeared as an array of inbox id's, in hopefully all cases, it's an array of one
+    inbox_object = serializers.PrimaryKeyRelatedField(many=True, read_only=True, allow_null=True)
+
     def create(self, validated_data):
         updated_author = AuthorSerializer.extract_and_upcreate_author(validated_data, author_id=self.context.get('author_id'))
         return Post.objects.create(**validated_data, author=updated_author)
@@ -48,7 +51,8 @@ class PostSerializer(serializers.ModelSerializer):
             'comments',
             'published',
             'visibility',
-            'unlisted'
+            'unlisted',
+            'inbox_object',
         ]
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -79,8 +83,9 @@ class LikeSerializer(serializers.ModelSerializer):
     
     # author will be created and validated separately 
     author = AuthorSerializer(required=False)
-
     object = serializers.URLField()
+    # appeared as an array of inbox id's, in hopefully all cases, it's an array of one
+    inbox_object = serializers.PrimaryKeyRelatedField(many=True, read_only=True, allow_null=True)
 
     def create(self, validated_data):
         updated_author = AuthorSerializer.extract_and_upcreate_author(validated_data, author_id=self.context.get('author_id'))
@@ -92,5 +97,6 @@ class LikeSerializer(serializers.ModelSerializer):
             "type",
             "summary",
             "author",
-            "object"
+            "object",
+            "inbox_object"
         ]

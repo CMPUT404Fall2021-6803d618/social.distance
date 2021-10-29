@@ -5,7 +5,7 @@ from django.db import models
 from django.urls import reverse 
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
 # Create your models here.
@@ -84,6 +84,9 @@ class Follow(models.Model):
     # URL of Author who is following the followee
     actor = models.ForeignKey(Author, related_name="followings", null=False, on_delete=models.CASCADE)
 
+    # https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/#reverse-generic-relations
+    inbox_object = GenericRelation('InboxObject', related_query_name='follow')
+
     @staticmethod
     def get_api_type():
         return 'Follow'
@@ -95,7 +98,7 @@ class Follow(models.Model):
 
 
 class InboxObject(models.Model):
-
+    id = models.CharField(primary_key=True, editable=False, default=uuid.uuid4, max_length=200)
     # the target author, whom the object is sent to.
     author = models.ForeignKey(Author, on_delete=models.CASCADE, related_name='inbox_objects')
     # https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/#generic-relations
