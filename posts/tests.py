@@ -315,7 +315,7 @@ class CommentListTestCase(TestCase):
             self.payload,
             format="json"
         )
-        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(len(Comment.objects.all()), 3)
 
     def test_post_comments_invalid_id(self):
@@ -358,7 +358,7 @@ class CommentListTestCase(TestCase):
             self.payload,
             format="json"
         )
-        self.assertEqual(res.status_code, 204)
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(len(Comment.objects.all()), 3)
         assert len(Author.objects.filter(id=self.payload["author"]["url"])) == 1
 
