@@ -3,6 +3,7 @@ import uuid
 from django.test import TestCase, Client
 from rest_framework.test import APIClient
 from django.db.utils import IntegrityError
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from django.contrib.auth.models import User
 from authors.models import Author
@@ -496,3 +497,51 @@ class LikeTestCase(TestCase):
             # should fail because of the UniqueConstraint
             # set in the models
             assert True
+
+class ImageUploadTestCase(TestCase):
+    file_in_bytes = b"iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAG1BMVEXMzMyWlpaqqqq3t7exsbGcnJy+vr6jo6PFxcUFpPI/AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAQUlEQVQ4jWNgGAWjgP6ASdncAEaiAhaGiACmFhCJLsMaIiDAEQEi0WXYEiMCOCJAJIY9KuYGTC0gknpuHwXDGwAA5fsIZw0iYWYAAAAASUVORK5CYII="
+    def setup_objects(self):
+        self.user = User.objects.create_superuser('test_username', 'test_email', 'test_pass')
+        self.client = client_with_auth(self.user, client)
+        self.author = Author.objects.create(user=self.user, display_name=self.user.username)
+
+    def test_upload_image_normal(self):
+        self.setup_objects()
+        res = self.client.post(
+            f'/author/{self.author.id}/images/',
+            {
+                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png")
+            },)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
+        self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
+        self.assertEqual(Post.objects.get(author=self.author).visibility, Post.Visibility.PUBLIC)
+        self.assertEqual(Post.objects.get(author=self.author).unlisted, True)
+
+    def test_upload_image_not_unlisted(self):
+        self.setup_objects()
+        res = self.client.post(
+            f'/author/{self.author.id}/images/',
+            {
+                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png"),
+                "unlisted": False
+            },)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
+        self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
+        self.assertEqual(Post.objects.get(author=self.author).visibility, Post.Visibility.PUBLIC)
+        self.assertEqual(Post.objects.get(author=self.author).unlisted, False)
+
+    def test_upload_image_PRIVATE(self):
+        self.setup_objects()
+        res = self.client.post(
+            f'/author/{self.author.id}/images/',
+            {
+                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png"),
+                "visibility": "PRIVATE",
+            },)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
+        self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
+        self.assertEqual(Post.objects.get(author=self.author).visibility, Post.Visibility.PRIVATE)
+        self.assertEqual(Post.objects.get(author=self.author).unlisted, True)

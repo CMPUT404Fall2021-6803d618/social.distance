@@ -476,7 +476,7 @@ def upload_image(request, author_id):
 
     author = get_object_or_404(Author, id=author_id)
 
-    # TODO create a ImageFormSerializer
+    # TODO create a ImageFormSerializer, or we don't have form validation!!!
     image = request.FILES.get('image')
     if not image:
         raise exceptions.ParseError('image is not provided')
