@@ -1,7 +1,7 @@
 import base64
 from django.http.response import FileResponse, HttpResponse
 import requests
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework.decorators import api_view, permission_classes
 from drf_spectacular.types import OpenApiTypes
 
@@ -434,4 +434,67 @@ def get_image(request, author_id, image_post_id):
     if not 'image' in post.content_type:
         raise exceptions.NotFound
 
-    return HttpResponse(base64.decodestring(post.content.encode('ascii')), content_type=post.content_type)
+    content = post.content
+    if type(content) == str:
+        content = content.encode('ascii')
+
+    print(content)
+    return HttpResponse(base64.decodestring(content), content_type=post.content_type)
+
+@api_view(['POST'])
+def upload_image(request, author_id):
+    """
+    ## Description
+    POST to save a image file under the author.
+    returns the link to the image.
+
+    ## Request
+    FormData with the following fields, value in JSON format if not otherwise specified:
+        - image: the image file, value is a js File object
+        - visibility: the visibility of the image, value is 'PUBLIC' or 'PRIVATE' or 'FRIENDS', default is 'PUBLIC'
+        - unlisted: whether the image is unlisted or not, value is 'true' or 'false', default is 'true'
+    For more examples about using formdata in the frontend, see https://developer.mozilla.org/en-US/docs/Web/API/FormData/append
+
+    An example of a js script:
+    ```js
+    let form = new FormData();
+    form.append("image", input.files[0]); // input is the file input element
+    form.append("visibility", "PUBLIC");
+    form.append("unlisted", "true");
+    fetch("http://127.0.0.1:8000/author/my_author_id/images/", {
+        method: "POST",
+        body: form
+    })
+    ```
+
+    ## Response
+    **200**: { 'url': <the_url_to_the_image> }
+    **400**: image or image type is not valid, OR visibility is not valid, OR unlisted is not valid
+    **404**: author does not exist
+    """
+    # TODO put request description as a schema
+
+    author = get_object_or_404(Author, id=author_id)
+
+    # TODO create a ImageFormSerializer
+    image = request.FILES.get('image')
+    if not image:
+        raise exceptions.ParseError('image is not provided')
+
+    if image.content_type in ['image/jpg', 'image/jpeg', 'image/jpeg;base64']:
+        content_type = 'image/jpeg;base64'
+    elif image.content_type in ['image/png', 'image/png;base64']:
+        content_type = 'image/png;base64'
+    else:
+        raise exceptions.ParseError('image type not supported')
+
+    image_data_in_b64_bytes = base64.b64encode(image.read())
+    image_data = image_data_in_b64_bytes.decode('ascii')
+
+    visibility = request.data.get('visibility', Post.Visibility.PUBLIC)
+    unlisted = request.data.get('unlisted', 'true').strip().lower() == 'true'
+
+    image_post = Post(author=author, title='Uploaded Image', description='', content_type=content_type, content=image_data, visibility=visibility, unlisted=unlisted)
+    image_post.update_fields_with_request(request)
+
+    return Response({'url': image_post.get_image_url()})
