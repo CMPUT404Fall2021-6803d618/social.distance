@@ -1,10 +1,12 @@
+import base64
+from django.http.response import FileResponse, HttpResponse
 import requests
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from drf_spectacular.types import OpenApiTypes
 
 from rest_framework.views import APIView
-from rest_framework.generics import ListAPIView, ListCreateAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework import status, permissions, exceptions
 from drf_spectacular.utils import OpenApiExample, extend_schema
@@ -417,3 +419,19 @@ class LikedList(APIView):
             res = connector_service.notify_like(like, request=request)
             return Response({'res': res, 'like': like_ser.validated_data})
         return Response(like_ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_image(request, author_id, image_post_id):
+    author, post = get_author_and_post(author_id, image_post_id)
+
+    # needs authentication if image is PRIVATE
+    if post.visibility == Post.Visibility.PRIVATE:
+        if not request.user or not request.user.is_authenticated:
+            raise exceptions.PermissionDenied('authentication required for this image')
+        # TODO check if user has access to this image: friends of the author, author itself...
+
+    if not 'image' in post.content_type:
+        raise exceptions.NotFound
+
+    return HttpResponse(base64.decodestring(post.content.encode('ascii')), content_type=post.content_type)

@@ -2,7 +2,7 @@ from django.urls import path, include, re_path
 
 from authors import views
 from .views import *
-from posts.views import LikedList
+from posts.views import LikedList, get_image
 
 urlpatterns = [
     # server to server API
@@ -12,6 +12,8 @@ urlpatterns = [
     path('<str:author_id>/', AuthorDetail.as_view(), name="author-detail"),
     path('<str:author_id>/posts/', include("posts.urls_posts")),
     path('<str:author_id>/post/', include("posts.urls_post")),
+    path('<str:author_id>/images/', include("posts.urls_post")),
+    path('<str:author_id>/images/<str:image_post_id>/', get_image, name="image-detail"),
 
     path('<str:author_id>/liked/', LikedList.as_view(), name="liked-list"),
 
