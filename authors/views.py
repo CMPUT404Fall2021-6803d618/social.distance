@@ -9,10 +9,11 @@ from rest_framework import exceptions, status, permissions
 from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
+from django.db.models.query_utils import Q
 
 from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
-from nodes.models import connector_service
+from nodes.models import connector_service, Node
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -525,14 +526,20 @@ class FollowingDetail(APIView):
         follow_object.delete()
 
         # send a request to the foreign server telling them to delete the follower
-        
         if (foreign_author_url.endswith("/")):
             request_url = foreign_author_url + "followers/" + author.url
         else:
             request_url = foreign_author_url + "/followers/" + author.url
-        # ignoring the response here as we can't control the remote server
-        # but at least we tried to notify them 
-        requests.delete(request_url, auth=(author.user.username, author.user.password))
+        
+        try:
+            host_url = foreign_author.host
+            node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+            # ignoring the response here as we can't control the remote server
+            # but at least we tried to notify them 
+            requests.delete(request_url, auth=node.get_basic_auth_tuple())
+        except Node.DoesNotExist:
+            print("failed to notify remote server of the unfollowing")
+    
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 
