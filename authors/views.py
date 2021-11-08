@@ -525,10 +525,14 @@ class FollowingDetail(APIView):
         follow_object.delete()
 
         # send a request to the foreign server telling them to delete the follower
-        request_url = foreign_author_url + "/followers/" + author.url
+        
+        if (foreign_author_url.endswith("/")):
+            request_url = foreign_author_url + "followers/" + author.url
+        else:
+            request_url = foreign_author_url + "/followers/" + author.url
         # ignoring the response here as we can't control the remote server
         # but at least we tried to notify them 
-        requests.delete(request_url)
+        response = requests.delete(request_url, auth=("admin", "socialdistance"))
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 
