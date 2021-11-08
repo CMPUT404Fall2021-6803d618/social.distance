@@ -532,7 +532,7 @@ class FollowingDetail(APIView):
             request_url = foreign_author_url + "/followers/" + author.url
         # ignoring the response here as we can't control the remote server
         # but at least we tried to notify them 
-        response = requests.delete(request_url, auth=("admin", "socialdistance"))
+        requests.delete(request_url, auth=(author.user.username, author.user.password))
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 
