@@ -512,6 +512,9 @@ class FollowingDetail(APIView):
         This can happen when the author is already following (status ACCEPTED) <br>
         Or author wants to remove its friend/follow request (status PENDING)
         ## Responses:
+        **204**: For successful DELETE request <br>
+        **400**: When the author is not following the other author <br>
+        **404**: When the follower or followee does not exist
         """
         try:
             author = Author.objects.get(id=author_id)
