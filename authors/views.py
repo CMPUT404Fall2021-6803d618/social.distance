@@ -542,7 +542,11 @@ class FollowingDetail(APIView):
             requests.delete(request_url, auth=node.get_basic_auth_tuple())
         except Node.DoesNotExist:
             print("failed to notify remote server of the unfollowing")
-    
+            print("Reason: Remote Server not connected")
+        except requests.exceptions.RequestException as e:
+            print("failed to notify remote server of the unfollowing")
+            print("Reason: Remote Request Failed: " + e)
+
         return Response(status=status.HTTP_204_NO_CONTENT)
         
 
