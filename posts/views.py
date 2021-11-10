@@ -53,9 +53,8 @@ class PostDetail(APIView):
         """
         _, post = get_author_and_post(author_id, post_id)
         
-        # TODO: what if the author itself want to get friends/private posts?
-        if (post.visibility != Post.Visibility.PUBLIC):
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        if post.visibility != Post.Visibility.PUBLIC and request.user != post.author.user:
+            raise exceptions.PermissionDenied
 
         serializer = PostSerializer(post, many=False, context={'author_id': author_id})
         return Response(serializer.data)
