@@ -1,14 +1,15 @@
 import json
+import tempfile
 import uuid
 from django.test import TestCase, Client
 from rest_framework.test import APIClient
 from django.db.utils import IntegrityError
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from django.contrib.auth.models import User
 from authors.models import Author
 from authors.tests import client_with_auth
 from posts.models import Post, Comment, Like
+from PIL import Image
 
 # Create your tests here.
 client = APIClient() # the mock http client
@@ -50,6 +51,11 @@ class PostDetailTestCase(TestCase):
         self.setup_objects()
         self.post.visibility = "PRIVATE"
         self.post.save()
+        res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
+        assert res.status_code == 200
+
+        another_user = User.objects.create_superuser('test_username1', 'test_email', 'test_pass123')
+        self.client = client_with_auth(another_user, self.client)
         res = self.client.get(f'/author/{self.author.id}/posts/{self.post.id}/', format='json')
         assert res.status_code == 403
 
@@ -505,13 +511,20 @@ class ImageUploadTestCase(TestCase):
         self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(user=self.user, display_name=self.user.username)
 
+        # https://stackoverflow.com/a/39775556
+        image = Image.new('RGB', (60, 30), color = 'red')
+        f = tempfile.NamedTemporaryFile(suffix='.png')
+        image.save(f)
+        self.image_file = f
+
     def test_upload_image_normal(self):
         self.setup_objects()
-        res = self.client.post(
-            f'/author/{self.author.id}/images/',
-            {
-                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png")
-            },)
+        with open(self.image_file.name, 'rb') as f:
+            res = self.client.post(
+                f'/author/{self.author.id}/images/',
+                {
+                    "image": f
+                },)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
         self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
@@ -520,12 +533,13 @@ class ImageUploadTestCase(TestCase):
 
     def test_upload_image_not_unlisted(self):
         self.setup_objects()
-        res = self.client.post(
-            f'/author/{self.author.id}/images/',
-            {
-                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png"),
-                "unlisted": False
-            },)
+        with open(self.image_file.name, 'rb') as f:
+            res = self.client.post(
+                f'/author/{self.author.id}/images/',
+                {
+                    "image": f,
+                    "unlisted": False
+                },)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
         self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
@@ -534,12 +548,13 @@ class ImageUploadTestCase(TestCase):
 
     def test_upload_image_PRIVATE(self):
         self.setup_objects()
-        res = self.client.post(
-            f'/author/{self.author.id}/images/',
-            {
-                "image": SimpleUploadedFile("test.png", self.file_in_bytes, content_type="image/png"),
-                "visibility": "PRIVATE",
-            },)
+        with open(self.image_file.name, 'rb') as f:
+            res = self.client.post(
+                f'/author/{self.author.id}/images/',
+                {
+                    "image": f,
+                    "visibility": "PRIVATE",
+                },)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(f"{self.author.url}images/" in res.json()["url"])
         self.assertEqual(Post.objects.get(author=self.author).url, res.json()["url"].replace('images', 'posts'))
