@@ -22,5 +22,5 @@ urlpatterns = [
 
     path('<str:author_id>/followings/', FollowingList.as_view(), name='following-list'),
     re_path(r'^(?P<author_id>[^/]*)/followings/(?P<foreign_author_url>.*)$',
-            internally_send_friend_request, name="friend-request"),
+            FollowingDetail.as_view(), name="following-detail"),
 ]

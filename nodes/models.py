@@ -32,6 +32,9 @@ class Node(models.Model):
     def get_basic_auth(self):
         return HTTPBasicAuth(self.username, self.password)
 
+    def get_basic_auth_tuple(self):
+        return (self.username, self.password)
+
 # https://stackoverflow.com/a/24025175
 # catch all request error and just print them out instead
 def silent_500(fn):

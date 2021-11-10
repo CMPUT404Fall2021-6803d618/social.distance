@@ -9,10 +9,11 @@ from rest_framework import exceptions, status, permissions
 from rest_framework.decorators import action, api_view, permission_classes
 from drf_spectacular.utils import OpenApiExample, extend_schema
 from django.forms.models import model_to_dict
+from django.db.models.query_utils import Q
 
 from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
-from nodes.models import connector_service
+from nodes.models import connector_service, Node
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -291,53 +292,6 @@ class InboxDetailView(RetrieveDestroyAPIView, InboxSerializerMixin):
 
         inbox_item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
- 
-
-@extend_schema(
-    responses=FollowSerializer
-)
-@api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
-def internally_send_friend_request(request, author_id, foreign_author_url):
-    """
-    **[Internal]** <br>
-    the /author/<author_id>/friend_request/<foreign_author_url>/ endpoint
-    - author_id: anything other than slash, but we hope it's a uuid
-    - foreign_author_url: anything, but we hope it's a valid url.
-
-    used only by local users, jwt authentication required. <br>
-    Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
-    """
-    import requests
-
-    try:
-        author = Author.objects.get(id=author_id)
-    except:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-
-    # get that foreign author's json object first
-    foreign_author_json = requests.get(foreign_author_url).json()
-
-    # check for foreign author validity
-    foreign_author_ser = AuthorSerializer(data=foreign_author_json)
-
-    if foreign_author_ser.is_valid():
-        foreign_author = foreign_author_ser.save()
-
-        if Follow.objects.filter(actor=author, object=foreign_author):
-            raise exceptions.PermissionDenied("duplicate follow object exists for the authors")
-
-        follow = Follow(
-            summary=f"{author.display_name} wants to follow {foreign_author.display_name}",
-            actor=author,
-            object=foreign_author
-        )
-
-        follow.save()
-        connector_service.notify_follow(follow, request=request)
-        return Response(FollowSerializer(follow).data)
-
-    return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class FollowerList(ListAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -503,3 +457,97 @@ class FollowingList(ListAPIView):
             raise exceptions.NotFound
  
         return author.followings.all()
+
+class FollowingDetail(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        responses=FollowSerializer()
+    )
+    def post(self, request, author_id, foreign_author_url):
+        """
+        **[Internal]** <br>
+        the /author/<author_id>/friend_request/<foreign_author_url>/ endpoint
+        - author_id: anything other than slash, but we hope it's a uuid
+        - foreign_author_url: anything, but we hope it's a valid url.
+
+        used only by local users, jwt authentication required. <br>
+        Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
+        """
+
+        try:
+            author = Author.objects.get(id=author_id)
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # get that foreign author's json object first
+        foreign_author_json = requests.get(foreign_author_url).json()
+
+        # check for foreign author validity
+        foreign_author_ser = AuthorSerializer(data=foreign_author_json)
+
+        if foreign_author_ser.is_valid():
+            foreign_author = foreign_author_ser.save()
+
+            if Follow.objects.filter(actor=author, object=foreign_author):
+                raise exceptions.PermissionDenied("duplicate follow object exists for the authors")
+
+            follow = Follow(
+                summary=f"{author.display_name} wants to follow {foreign_author.display_name}",
+                actor=author,
+                object=foreign_author
+            )
+
+            follow.save()
+            connector_service.notify_follow(follow, request=request)
+            return Response(FollowSerializer(follow).data)
+
+        return Response({'parsing foreign author': foreign_author_ser.errors}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, author_id, foreign_author_url):
+        """
+        ## Description: 
+        **[Internal]** <br>
+        Should be called when author_id's author no longer wants to follow foreign_author_url's author <br>
+        This can happen when the author is already following (status ACCEPTED) <br>
+        Or author wants to remove its friend/follow request (status PENDING)
+        ## Responses:
+        **204**: For successful DELETE request <br>
+        **400**: When the author is not following the other author <br>
+        **404**: When the follower or followee does not exist
+        """
+        try:
+            author = Author.objects.get(id=author_id)
+            foreign_author = Author.objects.get(url=foreign_author_url)
+            follow_object = Follow.objects.get(actor=author, object=foreign_author)
+        except Author.DoesNotExist as e:
+            return Response(e.message, status=status.HTTP_404_NOT_FOUND)
+        except Follow.DoesNotExist:
+            error_msg = "the follow relationship does not exist between the two authors"
+            return Response(error_msg, status=status.HTTP_400_BAD_REQUEST)
+        
+        follow_object.delete()
+
+        # send a request to the foreign server telling them to delete the follower
+        if (foreign_author_url.endswith("/")):
+            request_url = foreign_author_url + "followers/" + author.url
+        else:
+            request_url = foreign_author_url + "/followers/" + author.url
+        
+        try:
+            host_url = foreign_author.host
+            node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+            # ignoring the response here as we can't control the remote server
+            # but at least we tried to notify them 
+            requests.delete(request_url, auth=node.get_basic_auth_tuple())
+        except Node.DoesNotExist:
+            print("failed to notify remote server of the unfollowing")
+            print("Reason: Remote Server not connected")
+        except requests.exceptions.RequestException as e:
+            print("failed to notify remote server of the unfollowing")
+            print("Reason: Remote Request Failed: " + e)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        
+
+        
