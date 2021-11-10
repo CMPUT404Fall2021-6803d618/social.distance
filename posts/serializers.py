@@ -93,3 +93,18 @@ class LikeSerializer(serializers.ModelSerializer):
             "author",
             "object",
         ]
+
+class ImageUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField()
+    unlisted = serializers.BooleanField(default=True)
+    visibility = serializers.ChoiceField(choices=Post.Visibility.choices, default=Post.Visibility.PUBLIC)
+
+    def validate_image(self, image):
+        image = serializers.ImageField().to_internal_value(image)
+        if image.content_type in ['image/jpg', 'image/jpeg', 'image/jpeg;base64']:
+            image.content_type = 'image/jpeg;base64'
+        elif image.content_type in ['image/png', 'image/png;base64']:
+            image.content_type = 'image/png;base64'
+        else:
+            raise exceptions.ParseError('image type not supported')
+        return image
