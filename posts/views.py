@@ -58,7 +58,11 @@ class PostDetail(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
         serializer = PostSerializer(post, many=False, context={'author_id': author_id})
-        return Response(serializer.data)
+        response = serializer.data
+        # making an internal API call is not usually the best way to do this
+        # but currently only this solution works 
+        response["commentsSrc"] = requests.get(response["comments"]).json()
+        return Response(response)
     
     def post(self, request, author_id, post_id):
         """

@@ -67,7 +67,10 @@ class Post(models.Model):
         return self.url.replace('/posts/', '/images/')
 
     def build_comments_url(self):
-        return self.url + "/comments/"
+        if (self.url[-1] == "/"):
+            return self.url + "comments/"
+        else:
+            return self.url + "/comments/"
 
     def count_comments(self):
         return self.comment_set.count()
