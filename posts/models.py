@@ -67,7 +67,7 @@ class Post(models.Model):
         return self.url.replace('/posts/', '/images/')
 
     def build_comments_url(self):
-        if (self.url[-1] == "/"):
+        if (self.url.endswith("/")):
             return self.url + "comments/"
         else:
             return self.url + "/comments/"
