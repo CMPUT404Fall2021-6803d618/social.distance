@@ -53,9 +53,8 @@ class PostDetail(APIView):
         """
         _, post = get_author_and_post(author_id, post_id)
         
-        # TODO: what if the author itself want to get friends/private posts?
-        if (post.visibility != Post.Visibility.PUBLIC):
-            return Response(status=status.HTTP_403_FORBIDDEN)
+        if post.visibility != Post.Visibility.PUBLIC and request.user != post.author.user:
+            raise exceptions.PermissionDenied
 
         serializer = PostSerializer(post, many=False, context={'author_id': author_id})
         return Response(serializer.data)
@@ -149,6 +148,8 @@ class PostList(ListCreateAPIView):
         """
         ## Description:
         Get recent posts of author (paginated)
+
+        unlisted: only show listed posts
         ## Responses:
         **200**: for successful GET request <br>
         **404**: if the author_id cannot be found
@@ -157,7 +158,8 @@ class PostList(ListCreateAPIView):
             author_id = kwargs.get("author_id")
             _ = Author.objects.get(pk=author_id)
             self.posts = Post.objects.filter(
-                author_id=author_id
+                author_id=author_id,
+                unlisted=False,
             ).order_by('-published')
         except (KeyError, Author.DoesNotExist):
             error_msg = "Author id not found"
@@ -476,25 +478,14 @@ def upload_image(request, author_id):
 
     author = get_object_or_404(Author, id=author_id)
 
-    # TODO create a ImageFormSerializer, or we don't have form validation!!!
-    image = request.FILES.get('image')
-    if not image:
-        raise exceptions.ParseError('image is not provided')
+    ser = ImageUploadSerializer(data=request.data, context={'author': author})
 
-    if image.content_type in ['image/jpg', 'image/jpeg', 'image/jpeg;base64']:
-        content_type = 'image/jpeg;base64'
-    elif image.content_type in ['image/png', 'image/png;base64']:
-        content_type = 'image/png;base64'
-    else:
-        raise exceptions.ParseError('image type not supported')
+    if ser.is_valid():
+        content_type = ser.validated_data['image'].content_type
+        image_data = base64.b64encode(ser.validated_data['image'].read()).decode('ascii')
 
-    image_data_in_b64_bytes = base64.b64encode(image.read())
-    image_data = image_data_in_b64_bytes.decode('ascii')
-
-    visibility = request.data.get('visibility', Post.Visibility.PUBLIC)
-    unlisted = request.data.get('unlisted', 'true').strip().lower() == 'true'
-
-    image_post = Post(author=author, title='Uploaded Image', description='', content_type=content_type, content=image_data, visibility=visibility, unlisted=unlisted)
-    image_post.update_fields_with_request(request)
-
-    return Response({'url': image_post.get_image_url()})
+        image_post = Post(author=author, title='Uploaded Image', description='', content_type=content_type, content=image_data, visibility=ser.validated_data['visibility'], unlisted=ser.validated_data['unlisted'])
+        image_post.update_fields_with_request(request)
+        return Response({'url': image_post.get_image_url()})
+    
+    return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)

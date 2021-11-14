@@ -48,6 +48,23 @@ def silent_500(fn):
 
 class ConnectorService:
     @staticmethod
+    def get_target_users_for_post(post: Post):
+        """
+        - public posts are sent to all followers
+        - friend posts are sent to friends only
+        - unlisted posts are not sent to anyone
+        """
+        if post.visibility == Post.Visibility.PUBLIC:
+            return Author.objects.filter(followings__object=post.author)
+        elif post.visibility == Post.Visibility.FRIENDS:
+            # TODO test this
+            return Author.objects.filter(Q(followings__object=post.author, followings__status=Follow.FollowStatus.ACCEPTED) & Q(followers__actor=post.author, followers__status=Follow.FollowStatus.ACCEPTED))
+        elif post.visibility == Post.Visibility.PRIVATE:
+            return []
+        elif post.unlisted:
+            return []
+
+    @staticmethod
     def get_inbox_and_host_from_url(url):
         url_results = re.findall(r'(http[s]?:\/\/[^/]+\/)(author\/[^/]+\/)', url)
         if len(url_results) != 1:
@@ -66,10 +83,10 @@ class ConnectorService:
     @silent_500
     def notify_post(self, post: Post, request: Request = None):
         # get all follwers and their endpoints
-        followers = Author.objects.filter(followings__object=post.author)
+        target_users = self.get_target_users_for_post(post)
 
         # post the post to each of the followers' inboxes
-        for follower in followers:
+        for follower in target_users:
             inbox_url, host_url, _ = self.get_inbox_and_host_from_url(follower.url)
             if not self._same_host_and_save_to_inbox(request, host_url, inbox_item=post, inbox_author=follower):
                 self._find_node_and_post_to_inbox(inbox_url, host_url, PostSerializer(post).data)
@@ -110,5 +127,5 @@ class ConnectorService:
         # post the data to the inbox on the node
         global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
 
-        
+
 connector_service = ConnectorService()

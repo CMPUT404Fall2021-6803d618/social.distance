@@ -11,6 +11,7 @@ drf-spectacular
 # static file serving
 whitenoise
 markdown
+Pillow
 
 # local env
 python-dotenv
