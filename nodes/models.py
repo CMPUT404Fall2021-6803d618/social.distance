@@ -57,7 +57,8 @@ class ConnectorService:
         if post.visibility == Post.Visibility.PUBLIC:
             return Author.objects.filter(followings__object=post.author)
         elif post.visibility == Post.Visibility.FRIENDS:
-            return Author.objects.filter(Q(followings__object=post.author) & Q(followers__actor=post.author))
+            # TODO test this
+            return Author.objects.filter(Q(followings__object=post.author, followings__status=Follow.FollowStatus.ACCEPTED) & Q(followers__actor=post.author, followers__status=Follow.FollowStatus.ACCEPTED))
         elif post.visibility == Post.Visibility.PRIVATE:
             return []
         elif post.unlisted:
