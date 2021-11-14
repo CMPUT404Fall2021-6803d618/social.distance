@@ -223,6 +223,8 @@ class InboxListView(ListCreateAPIView, InboxSerializerMixin):
         if serializer.is_valid():
             # save the item to database, could be post or like or FR
             item = serializer.save()
+            if hasattr(item, 'update_fields_with_request'):
+                item.update_fields_with_request(request)
             # wrap the item in an inboxObject, links with author
             item_as_inbox = InboxObject(content_object=item, author=author)
             item_as_inbox.save()
