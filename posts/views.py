@@ -57,7 +57,15 @@ class PostDetail(APIView):
             raise exceptions.PermissionDenied
 
         serializer = PostSerializer(post, many=False, context={'author_id': author_id})
-        return Response(serializer.data)
+        response = serializer.data
+        # making an internal API call is not usually the best way to do this
+        # but currently only this solution works 
+        try:
+            # need a try block for unit test because url is not built for testing purpose
+            response["commentsSrc"] = requests.get(response["comments"]).json()
+        except:
+            pass
+        return Response(response)
     
     def post(self, request, author_id, post_id):
         """
