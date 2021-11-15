@@ -116,6 +116,7 @@ class InboxSerializerMixin:
 class InboxListView(ListCreateAPIView, InboxSerializerMixin):
     # permission_classes = [permissions.IsAuthenticated]
     pagination_class = InboxObjectsPagination
+    serializer_class = InboxObjectSerializer
 
     def get(self, request, author_id):
         """
