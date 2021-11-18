@@ -14,8 +14,11 @@ class PostSerializer(serializers.ModelSerializer):
     type = serializers.CharField(default="post", source="get_api_type", read_only=True)
     # public id should be the full url
     id = serializers.CharField(source="get_public_id", read_only=True)
+    source = serializers.URLField(required=False, allow_blank=True)
+    origin = serializers.URLField(required=False, allow_blank=True)
+
     count = serializers.IntegerField(source="count_comments", read_only=True)
-    published = serializers.DateTimeField(read_only=True)
+    published = serializers.DateTimeField(required=False)
     author = AuthorSerializer(required=False)
     comments = serializers.URLField(source="build_comments_url", read_only=True)
 

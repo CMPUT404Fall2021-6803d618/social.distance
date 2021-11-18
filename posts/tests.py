@@ -367,7 +367,7 @@ class CommentListTestCase(TestCase):
         )
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(Comment.objects.all()), 3)
-        assert len(Author.objects.filter(id=self.payload["author"]["url"])) == 1
+        assert len(Author.objects.filter(url=self.payload["author"]["url"])) == 1
 
 class LikeTestCase(TestCase):
     def setup_objects(self):

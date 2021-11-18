@@ -2,7 +2,7 @@ import base64
 from django.http.response import FileResponse, HttpResponse
 import requests
 from django.shortcuts import get_object_or_404, render
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from drf_spectacular.types import OpenApiTypes
 
 from rest_framework.views import APIView
@@ -448,7 +448,6 @@ def get_image(request, author_id, image_post_id):
     if type(content) == str:
         content = content.encode('ascii')
 
-    print(content)
     return HttpResponse(base64.decodestring(content), content_type=post.content_type)
 
 @api_view(['POST'])
@@ -497,3 +496,48 @@ def upload_image(request, author_id):
         return Response({'url': image_post.get_image_url()})
     
     return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def share_post(request, author_id, post_id):
+    """
+    **[Internal]** <br>
+
+    ## Description
+    POST to the endpoint to reshare a post. the server will create a new, reshared post,
+    and forward it to the corresponding followers' inboxes.
+
+    ## Request
+    nothing, but requires to be authenticated as the author who is trying to reshare.
+
+    ## Response
+    **200**: Post that is created
+    **403**: if the user is not local or if it's not authenticated
+    **404**: author or post does not exist
+    """
+
+    last_author, last_post = get_author_and_post(author_id, post_id)
+    last_url = last_post.url
+
+    # duplicate the post
+    shared_post = last_post
+    shared_post.pk = None
+    shared_post.save()
+
+    # modify author to be current logged in author
+    try:
+        shared_post.author = request.user.author
+    except:
+        raise exceptions.PermissionDenied('only a local, logged-in user can share this post')
+    # modify url and source
+    shared_post.update_fields_with_request(request)
+    shared_post.source = last_url
+    shared_post.save()
+
+    # notify the post
+    connector_service.notify_post(shared_post, request=request)
+
+    # return the post
+    ser = PostSerializer(shared_post)
+    return Response(status=status.HTTP_200_OK, data=ser.data)

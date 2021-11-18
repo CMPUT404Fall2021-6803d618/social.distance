@@ -1,5 +1,6 @@
 import uuid
 from requests import Request
+from urllib.parse import unquote, quote
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse 
@@ -7,6 +8,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
+
 
 # Create your models here.
 class Author(models.Model):
@@ -31,7 +33,7 @@ class Author(models.Model):
     
     def is_internal(self):
         try:
-            _ = Request('GET', self.id).prepare()
+            _ = Request('GET', unquote(self.id)).prepare()
             return False
         except:
             return True

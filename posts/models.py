@@ -76,9 +76,15 @@ class Post(models.Model):
         return self.comment_set.count()
 
     # used by serializer
-    def update_fields_with_request(self, request):
+    def update_fields_with_request(self, request=None):
+        if not request:
+            return
         self.url = request.build_absolute_uri(self.get_absolute_url())
         self.host = request.build_absolute_uri('/') # points to the server root
+        if not self.origin:
+            self.origin = self.url
+        if not self.source:
+            self.source = self.url
         self.save()
 
 class Comment(models.Model):
