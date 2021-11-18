@@ -2,7 +2,7 @@ from django.urls import path, include, re_path
 
 from authors import views
 from .views import *
-from posts.views import LikedList, get_image, upload_image
+from posts.views import LikedList, get_image, upload_image, StreamList
 
 urlpatterns = [
     # server to server API
@@ -10,6 +10,7 @@ urlpatterns = [
     path('<str:author_id>/inbox/<str:inbox_id>/', InboxDetailView.as_view(), name="inbox-detail"),
 
     path('<str:author_id>/', AuthorDetail.as_view(), name="author-detail"),
+    path('<str:author_id>/stream/', StreamList.as_view(), name="author-stream"), # internal
     path('<str:author_id>/posts/', include("posts.urls_posts")),
     path('<str:author_id>/post/', include("posts.urls_post")),
     path('<str:author_id>/images/', upload_image, name="upload-image"),
