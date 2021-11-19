@@ -343,8 +343,9 @@ class FollowerDetail(APIView):
             raise exceptions.NotFound
         return Response(AuthorSerializer(get_object_or_404(
             Author,
-            followings__object=author,  # all author following the author
-            url=foreign_author_url  # AND whose url matches param
+            followings__object=author,  # the author being followed
+            followings__status=Follow.FollowStatus.ACCEPTED,
+            url=foreign_author_url  # the foreign author following the author
         )).data)
 
     def delete(self, request, author_id, foreign_author_url):
@@ -458,8 +459,23 @@ class FollowingList(ListAPIView):
             author = Author.objects.get(id=self.kwargs.get('author_id'))
         except Author.DoesNotExist:
             raise exceptions.NotFound
- 
-        return author.followings.all()
+    
+        followings = author.followings.all()
+
+        for following in followings:
+            if following.status == Follow.FollowStatus.PENDING:
+                foreign_author_url = following.object.url
+                if foreign_author_url.endswith("/"):
+                    request_url = foreign_author_url + "followers/" + author.id
+                else:
+                    request_url = foreign_author_url + "/followers/" + author.id
+                response = requests.get(request_url)
+                # any status code < 400 indicate success
+                if response.status_code < 400:
+                    following.status = Follow.FollowStatus.ACCEPTED
+                    following.save()
+        
+        return followings
 
 class FollowingDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
