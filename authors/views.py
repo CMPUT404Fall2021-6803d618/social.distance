@@ -464,7 +464,10 @@ class FollowingList(ListAPIView):
 
         followings_to_delete = []
         for following in followings:
+            if following.object.is_internal():
+                continue
             foreign_author_url = following.object.url
+
             if foreign_author_url.endswith("/"):
                 request_url = foreign_author_url + "followers/" + author.url
             else:
