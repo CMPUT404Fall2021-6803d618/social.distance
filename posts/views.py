@@ -1,7 +1,10 @@
 import base64
-from django.http.response import FileResponse, HttpResponse
 import requests
+from itertools import chain
+
+from django.http.response import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.contrib.contenttypes.models import ContentType
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from drf_spectacular.types import OpenApiTypes
 
@@ -11,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework import status, permissions, exceptions
 from drf_spectacular.utils import OpenApiExample, extend_schema
 
-from authors.models import Author
+from authors.models import Author, InboxObject
 from authors.serializers import AuthorSerializer
 from nodes.models import connector_service
 
@@ -34,6 +37,34 @@ def get_author_and_post(author_id, post_id):
         raise exceptions.NotFound(error_msg)
 
     return (author, post)
+
+class StreamList(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PostSerializer
+
+    def get_queryset(self):
+        """
+        return a list of posts consist of:
+        - posts created by the current author
+        - posts sent to the author's inbox
+        """
+        # https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/#methods-on-contenttype-instances
+        # the Post type, in content type representation
+        author = get_object_or_404(Author, pk=self.kwargs.get('author_id'))
+
+        if not author.user == self.request.user:
+            raise exceptions.PermissionDenied("the logged in user cannot access other streams except that of itself")
+
+        post_content_type = ContentType.objects.get(app_label="posts", model="post")
+
+        inbox_posts = [inbox.content_object for inbox in InboxObject.objects.filter(author=author, content_type=post_content_type)]
+        own_posts = Post.objects.filter(author=author, unlisted=False)
+
+        return sorted(
+            chain(inbox_posts, own_posts),
+            key=lambda post: post.published,
+            reverse=True
+        )
 
 class PostDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
