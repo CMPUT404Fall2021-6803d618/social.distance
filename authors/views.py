@@ -462,6 +462,7 @@ class FollowingList(ListAPIView):
     
         followings = author.followings.all()
 
+        followings_to_delete = []
         for following in followings:
             foreign_author_url = following.object.url
             if foreign_author_url.endswith("/"):
@@ -476,8 +477,12 @@ class FollowingList(ListAPIView):
                 following.save()
             elif response.status_code >= 400 and following.status == Follow.FollowStatus.ACCEPTED:
                 # foreign author removed the author as a follower 
-                following.delete()
-        return followings
+                followings_to_delete.append(following.id)
+
+        # https://stackoverflow.com/a/34890230
+        followings.filter(id__in=followings_to_delete).delete()
+       
+        return followings.exclude(id__in=followings_to_delete)
 
 class FollowingDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
