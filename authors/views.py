@@ -463,18 +463,20 @@ class FollowingList(ListAPIView):
         followings = author.followings.all()
 
         for following in followings:
-            if following.status == Follow.FollowStatus.PENDING:
-                foreign_author_url = following.object.url
-                if foreign_author_url.endswith("/"):
-                    request_url = foreign_author_url + "followers/" + author.id
-                else:
-                    request_url = foreign_author_url + "/followers/" + author.id
-                response = requests.get(request_url)
-                # any status code < 400 indicate success
-                if response.status_code < 400:
-                    following.status = Follow.FollowStatus.ACCEPTED
-                    following.save()
-        
+            foreign_author_url = following.object.url
+            if foreign_author_url.endswith("/"):
+                request_url = foreign_author_url + "followers/" + author.url
+            else:
+                request_url = foreign_author_url + "/followers/" + author.url
+            response = requests.get(request_url)
+            # any status code < 400 indicate success
+            if response.status_code < 400 and following.status == Follow.FollowStatus.PENDING:
+                # foreign author accepted the follow request
+                following.status = Follow.FollowStatus.ACCEPTED
+                following.save()
+            elif response.status_code >= 400 and following.status == Follow.FollowStatus.ACCEPTED:
+                # foreign author removed the author as a follower 
+                following.delete()
         return followings
 
 class FollowingDetail(APIView):
