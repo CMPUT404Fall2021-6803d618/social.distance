@@ -61,7 +61,7 @@ class StreamList(ListAPIView):
         own_posts = Post.objects.filter(author=author, unlisted=False)
 
         return sorted(
-            chain(inbox_posts, own_posts),
+            filter(lambda post: post is not None, chain(inbox_posts, own_posts)),
             key=lambda post: post.published,
             reverse=True
         )
@@ -532,6 +532,14 @@ def upload_image(request, author_id):
 class ShareToFriendsSerializer(serializers.Serializer):
     friends = AuthorSerializer(many=True)
 
+
+def assert_not_own_post(request, post):
+    if not request.user:
+        raise exceptions.NotAuthenticated
+
+    if request.user == post.author.user:
+        raise exceptions.PermissionDenied("You cannot share your own post")
+
 @extend_schema(
     request=ShareToFriendsSerializer,
     responses={
@@ -558,6 +566,7 @@ def share_post_friends(request, author_id, post_id):
     """
 
     last_author, last_post = get_author_and_post(author_id, post_id)
+    assert_not_own_post(request, last_post)
     last_url = last_post.url
 
     # duplicate the post
@@ -608,6 +617,8 @@ def share_post_followers(request, author_id, post_id):
     """
 
     last_author, last_post = get_author_and_post(author_id, post_id)
+    assert_not_own_post(request, last_post)
+
     last_url = last_post.url
 
     # duplicate the post
