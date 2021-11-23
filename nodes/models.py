@@ -3,6 +3,7 @@ import re
 from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.query_utils import Q
+from typing import List
 
 import requests
 from requests.models import HTTPBasicAuth, Response
@@ -84,9 +85,9 @@ class ConnectorService:
             self._find_node_and_post_to_inbox(inbox_url, host_url, LikeSerializer(like).data)
 
     @silent_500
-    def notify_post(self, post: Post, request: Request = None):
+    def notify_post(self, post: Post, request: Request = None, targets: List[Author] = None):
         # get all follwers and their endpoints
-        target_users = self.get_target_users_for_post(post)
+        target_users = targets or self.get_target_users_for_post(post)
 
         # post the post to each of the followers' inboxes
         for follower in target_users:
