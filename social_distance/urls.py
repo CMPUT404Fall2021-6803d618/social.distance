@@ -34,6 +34,9 @@ urlpatterns = [
     path('authors/', include('authors.urls_authors')),
     path('author/', include('authors.urls_author')),
 
+    # other stuff
+    path('nodes/', include('nodes.urls')),
+
     # root
     path('schema/', SpectacularAPIView.as_view(), name='open-schema'),
     path('', SpectacularSwaggerView.as_view(
