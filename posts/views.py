@@ -529,9 +529,68 @@ def upload_image(request, author_id):
     return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class ShareToFriendsSerializer(serializers.Serializer):
+    friends = AuthorSerializer(many=True)
+
+@extend_schema(
+    request=ShareToFriendsSerializer,
+    responses={
+        200: PostSerializer
+    }
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
-def share_post(request, author_id, post_id):
+def share_post_friends(request, author_id, post_id):
+    """
+    **[Internal]** <br>
+
+    ## Description
+    POST to the endpoint to reshare a post. the server will create a new, reshared post,
+    and forward it to the corresponding followers' inboxes.
+
+    ## Request
+    nothing, but requires to be authenticated as the author who is trying to reshare.
+
+    ## Response
+    **200**: Post that is created
+    **403**: if the user is not local or if it's not authenticated
+    **404**: author or post does not exist
+    """
+
+    last_author, last_post = get_author_and_post(author_id, post_id)
+    last_url = last_post.url
+
+    # duplicate the post
+    shared_post = last_post
+    shared_post.pk = None
+    shared_post.save()
+
+    # modify author to be current logged in author
+    try:
+        shared_post.author = request.user.author
+    except:
+        raise exceptions.PermissionDenied('only a local, logged-in user can share this post')
+    # modify url and source
+    shared_post.update_fields_with_request(request)
+    shared_post.source = last_url
+    shared_post.save()
+
+    ser = ShareToFriendsSerializer(data=request.data)
+    if ser.is_valid():
+        # find authors whose url matches the uploaded author objects
+        target_authors = Author.objects.filter(url__in=list(map(lambda author_data: author_data['url'], ser.validated_data['friends'])))
+
+        # notify the post
+        connector_service.notify_post(shared_post, request=request, targets=target_authors)
+
+        # return the post
+        ser = PostSerializer(shared_post)
+        return Response(status=status.HTTP_200_OK, data=ser.data)
+    return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def share_post_followers(request, author_id, post_id):
     """
     **[Internal]** <br>
 
