@@ -33,6 +33,7 @@ urlpatterns = [
     # authors app
     path('authors/', include('authors.urls_authors')),
     path('author/', include('authors.urls_author')),
+    path('foreign-authors/', include('authors.urls_foreign')),
 
     # other stuff
     path('nodes/', include('nodes.urls')),
