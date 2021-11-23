@@ -578,5 +578,35 @@ class FollowingDetail(APIView):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
         
+class ForeignAuthorList(ListAPIView):
+    serializer_class = AuthorSerializer
+    pagination_class = AuthorsPagination
 
+    def get(self, request, node_id):
+        """
+        ## Description:
+        Get all authors from a foreign server node by calling their /authors/ endpoint
+        ## Responses:
+        Whatever the foreign server /authors/ endpoint returned to us
+        """
+        try:
+            node = Node.objects.get(pk=node_id)
+        except Node.DoesNotExist:
+            error_msg = "Cannot find the node with specific id"
+            raise exceptions.NotFound(error_msg)
         
+        request_url = node.host_url
+        if request_url[-1] != "/":
+            request_url += "/"
+
+        query_params = request.query_params.dict()
+        page = query_params["page"] if "page" in query_params else 1
+        size = query_params["size"] if "size" in query_params else 5
+        request_url += "authors/?page=" + str(page) + "&size=" + str(size)
+
+        try:
+            response = requests.get(request_url, auth=node.get_basic_auth_tuple())
+        except requests.exceptions.RequestException as err:
+            return Response(err, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(response.json(), status=response.status_code)
