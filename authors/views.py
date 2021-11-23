@@ -587,7 +587,8 @@ class ForeignAuthorList(ListAPIView):
         ## Description:
         Get all authors from a foreign server node by calling their /authors/ endpoint
         ## Responses:
-        Whatever the foreign server /authors/ endpoint returned to us
+        Whatever the foreign server /authors/ endpoint returned to us <br>
+        Or **404** if the node_id does not exist
         """
         try:
             node = Node.objects.get(pk=node_id)
