@@ -22,7 +22,7 @@ class Post(models.Model):
         FRIENDS = 'FRIENDS'
         PRIVATE = 'PRIVATE'
 
-    id = models.CharField(primary_key=True, editable=False, max_length=40, default=uuid.uuid4)
+    id = models.CharField(primary_key=True, editable=False, max_length=500, default=uuid.uuid4)
     url = models.URLField(editable=False)
     author = models.ForeignKey(Author, related_name="post", on_delete=models.CASCADE)
     
@@ -88,7 +88,7 @@ class Post(models.Model):
         self.save()
 
 class Comment(models.Model):
-    id = models.CharField(primary_key=True, editable=False, max_length=40, default=uuid.uuid4)
+    id = models.CharField(primary_key=True, editable=False, max_length=500, default=uuid.uuid4)
     url = models.URLField(editable=False)
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
