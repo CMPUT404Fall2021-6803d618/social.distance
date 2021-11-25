@@ -25,7 +25,7 @@ class Node(models.Model):
     # name of the node
     name = models.CharField(max_length=200, default="foreign_server")
 
-    host_url = models.URLField()
+    host_url = models.URLField(max_length=500)
     # username and password that they use, as a client, to be authenticated in our server
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True) # one2one with django user
 

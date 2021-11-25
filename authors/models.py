@@ -18,8 +18,8 @@ class Author(models.Model):
 
     display_name = models.CharField(max_length=30, blank=True) # maximum 30 chars for display name
     github_url = models.URLField(null=True, blank=True) # the url to the author github profile
-    url = models.URLField(editable=False) # the url to the author profile
-    host = models.URLField(editable=False) # the host server node url, ours is https://social-distance-api.herokuapp.com/
+    url = models.URLField(editable=False, max_length=500) # the url to the author profile
+    host = models.URLField(editable=False, max_length=500) # the host server node url, ours is https://social-distance-api.herokuapp.com/
 
     # following: Authors, added by related name, see AuthorFollowingRelation
     # followers: Authors, added by related name, see AuthorFollowingRelation

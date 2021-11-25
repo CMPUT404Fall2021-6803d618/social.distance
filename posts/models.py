@@ -23,12 +23,12 @@ class Post(models.Model):
         PRIVATE = 'PRIVATE'
 
     id = models.CharField(primary_key=True, editable=False, max_length=500, default=uuid.uuid4)
-    url = models.URLField(editable=False)
+    url = models.URLField(editable=False, max_length=500)
     author = models.ForeignKey(Author, related_name="post", on_delete=models.CASCADE)
     
     title = models.CharField(max_length=30) # title should not be super long
-    source = models.URLField(editable=False)
-    origin = models.URLField(editable=False)
+    source = models.URLField(editable=False, max_length=500)
+    origin = models.URLField(editable=False, max_length=500)
     description = models.CharField(max_length = 50)
     content_type = models.CharField(max_length=30, choices=ContentType.choices, default=ContentType.PLAIN)
     content = models.TextField()
@@ -89,7 +89,7 @@ class Post(models.Model):
 
 class Comment(models.Model):
     id = models.CharField(primary_key=True, editable=False, max_length=500, default=uuid.uuid4)
-    url = models.URLField(editable=False)
+    url = models.URLField(editable=False, max_length=500)
     author = models.ForeignKey(Author, on_delete=models.CASCADE)
     post = models.ForeignKey(Post, on_delete=models.CASCADE)
     comment = models.TextField()
@@ -125,7 +125,7 @@ class Like(models.Model):
     summary = models.CharField(max_length=50)
     author = models.ForeignKey(Author, related_name = "likes", on_delete=models.CASCADE)
     # object can either be a post or comment
-    object = models.URLField()
+    object = models.URLField(max_length=500)
 
     @staticmethod
     def get_api_type():
