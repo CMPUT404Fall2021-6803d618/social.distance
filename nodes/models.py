@@ -70,7 +70,7 @@ class ConnectorService:
 
     @staticmethod
     def get_inbox_and_host_from_url(url):
-        url_results = re.findall(r'(http[s]?:\/\/[^/]+\/)(author\/[^/]+\/)', url)
+        url_results = re.findall(r'(http[s]?:\/\/[^/]+\/)(.*author\/[^/]+\/)', url)
         if len(url_results) != 1:
             raise exceptions.APIException(f"cannot match the author endpoint from the url: {url}")
         host, author_path = url_results[0]
