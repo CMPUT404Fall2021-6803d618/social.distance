@@ -40,6 +40,7 @@ class PostSerializer(serializers.ModelSerializer):
             'type', 
             'title', 
             'id', 
+            'url',
             'source', 
             'origin', 
             'description',
