@@ -94,15 +94,6 @@ class AuthorSerializer(serializers.ModelSerializer):
         except:
             raise exceptions.ValidationError("author does not exist for the post")
 
-    def validate_github(self, value):
-        """
-        validator that will run on `github` field on .is_valid() call
-        """
-        if value and not 'github.com' in value:
-            raise ValidationError(
-                _('Author github url has to be a github url.'))
-        return value
-
     class Meta:
         model = Author
         # show these fields in response
