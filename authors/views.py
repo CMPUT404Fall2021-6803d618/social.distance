@@ -28,7 +28,8 @@ class AuthorList(ListAPIView):
 
     # used by the ListCreateAPIView super class 
     def get_queryset(self):
-        return Author.objects.all()
+        all_authors = Author.objects.all()
+        return [author for author in all_authors if author.is_internal()]
 
     @extend_schema(
         # specify response format for list: https://drf-spectacular.readthedocs.io/en/latest/faq.html?highlight=list#i-m-using-action-detail-false-but-the-response-schema-is-not-a-list

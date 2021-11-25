@@ -93,6 +93,9 @@ class Follow(models.Model):
     def get_api_type():
         return 'Follow'
 
+    def __str__(self):
+        return self.summary
+
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=['object', 'actor'], name='unique_follower')
