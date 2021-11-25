@@ -390,7 +390,8 @@ class LikesCommentList(APIView):
 
 
 class LikedList(APIView):
-    
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
     def get(self, request, author_id):
         """
         ## Description:
