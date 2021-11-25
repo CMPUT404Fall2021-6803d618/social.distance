@@ -1,6 +1,6 @@
 # social.distance
 ## Overview
-`social.distance` is a project forked from [CMPUT404-project-socialdistribution](https://github.com/abramhindle/CMPUT404-project-socialdistribution). It is a course project for CMPUT 404, Fall 2021.
+`social.distance` is a project forked from [CMPUT404-project-socialdistribution](https://github.com/abramhindle/CMPUT404-project-socialdistribution). It is a course project for University of Alberta's CMPUT 404 course, Fall 2021.
 
 See [project.org](https://github.com/CMPUT404Fall2021-6803d618/social.distance/blob/master/project.org) (plain-text/org-mode) for a description of the project.
 
