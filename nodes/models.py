@@ -132,7 +132,9 @@ class ConnectorService:
         # find the node that matches the url
         node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
         # post the data to the inbox on the node
-        global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
-
+        response = global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
+        print("response: ", response)
+        print("status_code: ", response.status_code)
+        print("body: ", response.text)
 
 connector_service = ConnectorService()
