@@ -604,7 +604,7 @@ class ForeignAuthorList(ListAPIView):
 
         query_params = request.query_params.dict()
         page = query_params["page"] if "page" in query_params else 1
-        size = query_params["size"] if "size" in query_params else 5
+        size = query_params["size"] if "size" in query_params else 100
         request_url += "authors/?page=" + str(page) + "&size=" + str(size)
 
         try:
