@@ -511,6 +511,7 @@ class FollowingDetail(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         # get that foreign author's json object first
+        print(foreign_author_url)
         foreign_author_json = requests.get(foreign_author_url).json()
 
         # check for foreign author validity
