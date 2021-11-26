@@ -35,9 +35,8 @@ class FollowTestCase(TestCase):
             "url": "http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
             "host": "http://127.0.0.1:5454/",
             "displayName": "Greg Johnson",
-            "github": "http://github.com/gjohnson"
-            # TODO
-            # "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
+            "github": "http://github.com/gjohnson",
+            "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
         },
         "object": {
             "type": "author",
@@ -45,9 +44,8 @@ class FollowTestCase(TestCase):
             "host": "http://127.0.0.1:5454/",
             "displayName": "Lara Croft",
             "url": "http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
-            "github": "http://github.com/laracroft"
-            # TODO: Image from a public domain
-            # "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
+            "github": "http://github.com/laracroft",
+            "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
         }
     }
 
