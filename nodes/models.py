@@ -34,7 +34,7 @@ class Node(models.Model):
     password = models.CharField(max_length=200) 
 
     def __str__(self):
-        return self.name
+        return self.name + " (" + self.id + ")"
 
     def get_basic_auth(self):
         return HTTPBasicAuth(self.username, self.password)
@@ -132,6 +132,10 @@ class ConnectorService:
         # find the node that matches the url
         node: Node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
         # post the data to the inbox on the node
+        if "inbox_object" in data:
+            del data["inbox_object"]
+        if "status" in data:
+            del data["status"]    
         response = global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
         print("request_url: ", inbox_url)
         print("data:", data)
