@@ -34,7 +34,7 @@ class Node(models.Model):
     password = models.CharField(max_length=200) 
 
     def __str__(self):
-        return self.name + " (" + self.id + ")"
+        return self.name + " (" + str(self.id) + ")"
 
     def get_basic_auth(self):
         return HTTPBasicAuth(self.username, self.password)
