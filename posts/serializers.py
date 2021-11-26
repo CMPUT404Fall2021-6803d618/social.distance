@@ -17,6 +17,8 @@ class PostSerializer(serializers.ModelSerializer):
     source = serializers.URLField(required=False, allow_blank=True)
     origin = serializers.URLField(required=False, allow_blank=True)
 
+    description = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
     count = serializers.IntegerField(source="count_comments", read_only=True)
     published = serializers.DateTimeField(required=False)
     author = AuthorSerializer(required=False)
