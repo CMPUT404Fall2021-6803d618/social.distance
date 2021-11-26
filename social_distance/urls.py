@@ -19,6 +19,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from posts.views import get_all_posts
+
 from .views import register, login, token_refresh
 
 urlpatterns = [
@@ -34,6 +36,8 @@ urlpatterns = [
     path('authors/', include('authors.urls_authors')),
     path('author/', include('authors.urls_author')),
     path('foreign-authors/', include('authors.urls_foreign')),
+
+    path('posts/', get_all_posts, name='all-posts'),
 
     # other stuff
     path('nodes/', include('nodes.urls')),

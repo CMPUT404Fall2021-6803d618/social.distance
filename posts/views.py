@@ -22,6 +22,7 @@ from .models import Post, Comment, Like
 from .serializers import *
 from .pagination import CommentsPagination, PostsPagination
 
+
 import uuid
 import copy
 
@@ -37,6 +38,17 @@ def get_author_and_post(author_id, post_id):
         raise exceptions.NotFound(error_msg)
 
     return (author, post)
+
+@api_view(['GET'])
+def get_all_posts(request):
+    """
+    THIS IS NOT IN THE SPEC. SOMEONE PLEASE BE MORE RESPONSIBLE FOR THE SPEC.
+    IT'S SO BARELY USABLE THAT I HAVE TO SHOUT. -Lucas
+    """
+    posts = Post.objects.all()
+    posts = list(filter(lambda x: x.author.is_internal(), posts))
+
+    return Response(PostSerializer(posts, many=True).data)
 
 class StreamList(ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
