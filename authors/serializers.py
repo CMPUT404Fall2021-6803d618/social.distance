@@ -23,6 +23,8 @@ class AuthorSerializer(serializers.ModelSerializer):
     url = serializers.URLField(required=False)
     host = serializers.URLField(required=False)
 
+    profileImage = serializers.URLField(required=False, allow_null=True, allow_blank=True, source="profile_image")
+
     def to_representation(self, instance):
         return {
             **super().to_representation(instance),
@@ -97,7 +99,7 @@ class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
         # show these fields in response
-        fields = ['type', 'id', 'host', 'displayName', 'url', 'github']
+        fields = ['type', 'id', 'host', 'displayName', 'url', 'github', 'profileImage']
 
 
 class FollowSerializer(serializers.ModelSerializer):

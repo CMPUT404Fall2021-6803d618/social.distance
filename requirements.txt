@@ -12,6 +12,7 @@ drf-spectacular
 whitenoise
 markdown
 Pillow
+sentry-sdk
 
 # local env
 python-dotenv
