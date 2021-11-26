@@ -14,6 +14,22 @@ from pathlib import Path
 import json
 import dj_database_url
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+sentry_sdk.init(
+    dsn="https://d5749eea89424b0dbe5cd88e3b8186c9@o1078280.ingest.sentry.io/6081879",
+    integrations=[DjangoIntegration()],
+
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    # We recommend adjusting this value in production.
+    traces_sample_rate=1.0,
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True
+)
 
 # load what's in .env to environment vars, accessible via os.getenv
 load_dotenv()
