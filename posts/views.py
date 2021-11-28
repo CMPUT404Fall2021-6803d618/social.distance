@@ -73,7 +73,7 @@ class StreamList(ListAPIView):
         own_posts = Post.objects.filter(author=author, unlisted=False)
 
         return sorted(
-            chain(inbox_posts, own_posts),
+            filter(lambda post: post is not None, chain(inbox_posts, own_posts)),
             key=lambda post: post.published,
             reverse=True
         )
