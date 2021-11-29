@@ -21,7 +21,7 @@ class Author(models.Model):
     url = models.URLField(editable=False, max_length=500) # the url to the author profile
     host = models.URLField(editable=False, max_length=500) # the host server node url, ours is https://social-distance-api.herokuapp.com/
 
-    profile_image = models.URLField(max_length=500, blank=True)
+    profile_image = models.URLField(max_length=500, null=True, blank=True)
 
     # following: Authors, added by related name, see AuthorFollowingRelation
     # followers: Authors, added by related name, see AuthorFollowingRelation
