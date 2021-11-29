@@ -4,8 +4,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Q
 
-from urllib.parse import quote, unquote
-
 from rest_framework import exceptions, serializers
 
 from .models import Author, Follow, InboxObject
@@ -49,15 +47,10 @@ class AuthorSerializer(serializers.ModelSerializer):
             'github_url', instance.github_url)
         instance.display_name = validated_data.get(
             'display_name', instance.display_name)
+        instance.profile_image = validated_data.get(
+            'profile_image', instance.profile_image)
         instance.save()
         return instance
-
-    @staticmethod
-    def quote(url):
-        """
-        method used to quote the author id for use in urls
-        """
-        return quote(url, safe='')
 
     @staticmethod
     def _upcreate(validated_data):
@@ -66,13 +59,13 @@ class AuthorSerializer(serializers.ModelSerializer):
         """
         try:
             author = Author.objects.get(
-                Q(id=AuthorSerializer.quote(validated_data['id'])) | Q(url=validated_data['url']))
+                Q(id=validated_data['id']) | Q(url=validated_data['url']))
             updated_author = AuthorSerializer._update(author, validated_data)
         except Author.MultipleObjectsReturned:
             raise exceptions.ParseError(
                 "multiple author objects with the same id or url is detected. How did you do that?")
         except:
-            validated_data['id'] = AuthorSerializer.quote(validated_data.get('id', str(uuid.uuid4())))
+            validated_data['id'] = validated_data.get('id', str(uuid.uuid4()))
             updated_author = Author.objects.create(**validated_data)
 
         return updated_author

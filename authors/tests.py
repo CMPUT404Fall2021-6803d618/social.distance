@@ -22,8 +22,6 @@ def client_with_auth(user, client):
     client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
     return client
 
-def quote(string):
-    return parse.quote(string, safe='')
 
 class FollowTestCase(TestCase):
     DATA = {
@@ -122,7 +120,7 @@ class AuthorSerializerTestCase(TestCase):
         assert s.is_valid()
         foreign_author = s.save()  # an Author object
 
-        self.assertEqual(foreign_author.id, quote(self.FOREIGN_AUTHOR_A_DATA['id']))
+        self.assertEqual(foreign_author.id, self.FOREIGN_AUTHOR_A_DATA['id'])
         self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_A_DATA['url'])
         self.assertEqual(foreign_author.display_name, self.FOREIGN_AUTHOR_A_DATA['displayName'])
         self.assertEqual(foreign_author.host, self.FOREIGN_AUTHOR_A_DATA['host'])
@@ -138,7 +136,7 @@ class AuthorSerializerTestCase(TestCase):
         assert s.is_valid()
         foreign_author = s.save()  # an Author object
 
-        self.assertEqual(foreign_author.id, quote(self.FOREIGN_AUTHOR_B_DATA['id']))
+        self.assertEqual(foreign_author.id, self.FOREIGN_AUTHOR_B_DATA['id'])
         self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_B_DATA['url'])
         self.assertEqual(foreign_author.host, self.FOREIGN_AUTHOR_B_DATA['host'])
         self.assertEqual(foreign_author.display_name, self.FOREIGN_AUTHOR_B_DATA['displayName'])

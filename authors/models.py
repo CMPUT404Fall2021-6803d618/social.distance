@@ -1,6 +1,6 @@
 import uuid
 from requests import Request
-from urllib.parse import unquote, quote
+from urllib.parse import unquote
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse 

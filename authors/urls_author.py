@@ -6,22 +6,26 @@ from posts.views import LikedList, get_image, upload_image, StreamList
 
 urlpatterns = [
     # server to server API
-    path('<str:author_id>/inbox/', InboxListView.as_view(), name="inbox-list"),
-    path('<str:author_id>/inbox/<str:inbox_id>/', InboxDetailView.as_view(), name="inbox-detail"),
+    # NOTE: all paths have to be in sequence of MORE_SPECIFIC > LESS_SPECIFIC,
+    # since django url runs in sequence and general will cover all specifc ones
+    path('<path:author_id>/inbox/<str:inbox_id>/', InboxDetailView.as_view(), name="inbox-detail"),
+    path('<path:author_id>/inbox/', InboxListView.as_view(), name="inbox-list"),
 
-    path('<str:author_id>/', AuthorDetail.as_view(), name="author-detail"),
-    path('<str:author_id>/stream/', StreamList.as_view(), name="author-stream"), # internal
-    path('<str:author_id>/posts/', include("posts.urls_posts")),
-    path('<str:author_id>/post/', include("posts.urls_post")),
-    path('<str:author_id>/images/', upload_image, name="upload-image"),
-    path('<str:author_id>/images/<str:image_post_id>/', get_image, name="image-detail"),
+    path('<path:author_id>/stream/', StreamList.as_view(), name="author-stream"), # internal
+    path('<path:author_id>/posts/', include("posts.urls_posts")),
+    path('<path:author_id>/post/', include("posts.urls_post")),
 
-    path('<str:author_id>/liked/', LikedList.as_view(), name="liked-list"),
+    path('<path:author_id>/images/<str:image_post_id>/', get_image, name="image-detail"),
+    path('<path:author_id>/images/', upload_image, name="upload-image"),
 
-    path('<str:author_id>/followers/', FollowerList.as_view(), name="author-followers"),
-    re_path(r'^(?P<author_id>[^/]*)/followers/(?P<foreign_author_url>.*)$', FollowerDetail.as_view(), name="author-follower-detail"),
+    path('<path:author_id>/liked/', LikedList.as_view(), name="liked-list"),
 
-    path('<str:author_id>/followings/', FollowingList.as_view(), name='following-list'),
-    re_path(r'^(?P<author_id>[^/]*)/followings/(?P<foreign_author_url>.*)$',
+    path('<path:author_id>/followers/<path:foreign_author_url>', FollowerDetail.as_view(), name="author-follower-detail"),
+    path('<path:author_id>/followers/', FollowerList.as_view(), name="author-followers"),
+
+    path('<path:author_id>/followings/<path:foreign_author_url>',
             FollowingDetail.as_view(), name="following-detail"),
+    path('<path:author_id>/followings/', FollowingList.as_view(), name='following-list'),
+
+    path('<path:author_id>/', AuthorDetail.as_view(), name="author-detail"),
 ]

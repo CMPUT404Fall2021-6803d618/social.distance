@@ -26,10 +26,10 @@ class Post(models.Model):
     url = models.URLField(editable=False, max_length=500)
     author = models.ForeignKey(Author, related_name="post", on_delete=models.CASCADE)
     
-    title = models.CharField(max_length=30) # title should not be super long
+    title = models.CharField(max_length=200) # title should not be super long
     source = models.URLField(editable=False, max_length=500)
     origin = models.URLField(editable=False, max_length=500)
-    description = models.CharField(max_length = 50)
+    description = models.CharField(max_length = 200, blank=True, default="")
     content_type = models.CharField(max_length=30, choices=ContentType.choices, default=ContentType.PLAIN)
     content = models.TextField()
     published = models.DateTimeField(auto_now_add=True)
