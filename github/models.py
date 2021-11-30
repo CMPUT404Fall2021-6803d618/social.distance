@@ -17,6 +17,9 @@ class GithubEvent(models.Model):
     event_title = models.CharField(max_length=50)
     time = models.DateTimeField()
 
+    def __str__(self):
+        return f"{self.username} | {self.type} | {str(self.id)}"
+
     # TODO: make everything in markdown (i.e. clickable)
     def create_event_content(self, github_event):
         if github_event["type"] == GithubEvent.EventType.PUSH_EVENT:
