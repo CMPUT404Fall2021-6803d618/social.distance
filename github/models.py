@@ -24,8 +24,9 @@ class GithubEvent(models.Model):
     def create_event_content(self, github_event):
         if github_event["type"] == GithubEvent.EventType.PUSH_EVENT:
             commits = github_event["payload"]["commits"]
-            repo = "https://github.com/" + github_event["repo"]["name"]
-            content = f"[{self.username}]({self.url}) made {len(commits)} commit(s) to repo [{repo}]({repo}): \n"
+            repo_name = github_event["repo"]["name"]
+            repo_url = "https://github.com/" + repo_name
+            content = f"[{self.username}]({self.url}) made {len(commits)} commit(s) to repo [{repo_name}]({repo_url}): \n"
             for commit in commits:
                 sha = commit["sha"]
                 message = commit["message"]
