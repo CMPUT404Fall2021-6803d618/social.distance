@@ -1,6 +1,7 @@
 import requests
 import re
 
+from dateutil import parser
 from .models import GithubEvent
 
 # using the regex to extract the username part
@@ -24,7 +25,7 @@ def github_event_to_post_adapter(github_events, github_url):
                 type = event["type"],
                 username = event["actor"]["login"],
                 url = github_url,
-                time = event["created_at"]
+                time = parser.parse(event["created_at"])
             )
             github_event.create_event_content(event)
             github_event.save()
