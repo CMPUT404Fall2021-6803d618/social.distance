@@ -46,7 +46,7 @@ def get_all_posts(request):
     IT'S SO BARELY USABLE THAT I HAVE TO SHOUT. -Lucas
     """
     posts = Post.objects.all()
-    posts = list(filter(lambda x: x.author.is_internal(), posts))
+    posts = list(filter(lambda x: x.author.is_internal, posts))
 
     return Response(PostSerializer(posts, many=True).data)
 
@@ -291,7 +291,7 @@ class CommentList(ListCreateAPIView):
 
         comment_author_set = Author.objects.filter(url=comment_author_url)
         # check if author is local
-        if comment_author_set and comment_author_set.get().is_internal():
+        if comment_author_set and comment_author_set.get().is_internal:
             # local author
             comment_author = comment_author_set.get()
         else:

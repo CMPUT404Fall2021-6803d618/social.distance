@@ -29,7 +29,7 @@ class AuthorList(ListAPIView):
     # used by the ListCreateAPIView super class 
     def get_queryset(self):
         all_authors = Author.objects.all()
-        return [author for author in all_authors if author.is_internal()]
+        return [author for author in all_authors if author.is_internal]
 
     @extend_schema(
         # specify response format for list: https://drf-spectacular.readthedocs.io/en/latest/faq.html?highlight=list#i-m-using-action-detail-false-but-the-response-schema-is-not-a-list
@@ -414,7 +414,7 @@ class FollowerDetail(APIView):
             raise exceptions.server_error(request)
 
         # check if the follower is a local author
-        if existing_follower_set and existing_follower_set.get().is_internal():
+        if existing_follower_set and existing_follower_set.get().is_internal:
             # internal author: do nothing
             follower = existing_follower_set.get()
         else:
@@ -465,7 +465,7 @@ class FollowingList(ListAPIView):
 
         followings_to_delete = []
         for following in followings:
-            if following.object.is_internal():
+            if following.object.is_internal:
                 continue
             foreign_author_url = following.object.url
 

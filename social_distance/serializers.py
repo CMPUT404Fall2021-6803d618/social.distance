@@ -56,7 +56,7 @@ class RegisterSerializer(CommonAuthenticateSerializer):
         user.set_password(validated_data['password'])
         user.save()
         author = Author(user=user, display_name=validated_data.get(
-            'display_name', user.username), github_url=validated_data.get('github_url'))
+            'display_name', user.username), github_url=validated_data.get('github_url'), is_internal=True)
         # modify url to be server path
         author.update_fields_with_request(self.context['request'])
         author.save()
