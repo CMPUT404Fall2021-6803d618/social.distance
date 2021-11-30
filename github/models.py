@@ -25,8 +25,9 @@ class GithubEvent(models.Model):
             content = f"[{self.username}]({self.url}) made {len(commits)} commit(s) to [{repo}]({repo}): \n"
             for commit in commits:
                 sha = commit["sha"]
+                message = commit["message"]
                 sha_url = sha.replace("repos/", "").replace("api", "www")
-                content += f"[{sha}]({sha_url}): {commit["message"]}"
+                content += f"[{sha}]({sha_url}): {message}"
             self.event_content = content
             self.save()
     
