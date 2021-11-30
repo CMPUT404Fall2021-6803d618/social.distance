@@ -47,8 +47,11 @@ def get_github_activity(github_url):
 
     # Using the GitHub API to fetch the events
     # https://docs.github.com/en/rest/reference/activity#list-public-events-for-a-user
-    # this will return the newest 30 activities by default
-    response = requests.get(f"https://api.github.com/users/{username}/events")
+    # this will return the newest 30 activities by default without "per_page"
+    response = requests.get(
+        url = f"https://api.github.com/users/{username}/events",
+        params = {"per_page": 10}
+    )
 
     if response.status_code != 200:
         print(f"Cannot fetch github activity for user {username}")
