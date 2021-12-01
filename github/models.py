@@ -50,9 +50,9 @@ class GithubEvent(models.Model):
 
                 event_type = github_event["type"][0:7].lower()
                 if ref:
-                    content += f"{user_md} {event_type} the {ref} {ref_type} in repo {repo_md}"
+                    content = f"{user_md} {event_type} the {ref} {ref_type} in repo {repo_md}"
                 elif ref_type == "repository":
-                    content += f"{user_md} {event_type} the repository {repo_md}"
+                    content = f"{user_md} {event_type} the repository {repo_md}"
             elif github_event["type"] == GithubEvent.EventType.WATCH_EVENT:
                 content = f"{user_md} starred repo {repo_md}"
             elif github_event["type"] == GithubEvent.EventType.FORK_EVENT:
