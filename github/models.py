@@ -48,7 +48,8 @@ class GithubEvent(models.Model):
                 ref = github_event["payload"]["ref"]
                 ref_type = github_event["payload"]["ref_type"]
 
-                event_type = github_event["type"][0:7].lower()
+                # either "created" or "deleted"
+                event_type = github_event["type"][0:6].lower() + "d"
                 if ref:
                     content = f"{user_md} {event_type} the {ref} {ref_type} in repo {repo_md}"
                 elif ref_type == "repository":
