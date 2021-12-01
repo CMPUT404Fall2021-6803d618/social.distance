@@ -57,7 +57,7 @@ def get_github_activity(github_url):
         print(f"Cannot fetch github activity for user {username}")
         print(f"Request returned a status code of {response.status_code}")
         print(f"Request returned body: {response.text}")
-        return None
+        return []
 
     return github_event_to_post_adapter(response.json(), github_url)
 
