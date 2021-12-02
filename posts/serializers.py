@@ -55,6 +55,7 @@ class PostSerializer(serializers.ModelSerializer):
             'published',
             'visibility',
             'unlisted',
+            'is_github'
         ]
 
 class CommentSerializer(serializers.ModelSerializer):

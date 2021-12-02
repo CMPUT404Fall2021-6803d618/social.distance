@@ -77,7 +77,8 @@ class GithubEvent(models.Model):
             "content": self.event_content,
             "published": self.time,
             "visibility": "PUBLIC",
-            "unlisted": False
+            "unlisted": False,
+            "is_github": True
         }
         
         fake_post = Post(**data, author=Author.objects.get(github_url=self.url))

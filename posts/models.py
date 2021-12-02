@@ -37,6 +37,7 @@ class Post(models.Model):
     visibility = models.CharField(max_length=10, choices=Visibility.choices, default=Visibility.PUBLIC)
 
     inbox_object = GenericRelation(InboxObject, related_query_name='post')
+    is_github = models.BooleanField(default=False)
 
     # make the admin page looks pretty
     def __str__(self):
