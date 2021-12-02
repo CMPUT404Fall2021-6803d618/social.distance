@@ -17,6 +17,7 @@ from drf_spectacular.utils import OpenApiExample, extend_schema
 from authors.models import Author, InboxObject
 from authors.serializers import AuthorSerializer
 from nodes.models import connector_service
+from github.utils import get_github_activity
 
 from .models import Post, Comment, Like
 from .serializers import *
@@ -71,9 +72,10 @@ class StreamList(ListAPIView):
 
         inbox_posts = [inbox.content_object for inbox in InboxObject.objects.filter(author=author, content_type=post_content_type)]
         own_posts = Post.objects.filter(author=author, unlisted=False)
+        github_activities = get_github_activity(author.github_url)
 
         return sorted(
-            filter(lambda post: post is not None, chain(inbox_posts, own_posts)),
+            filter(lambda post: post is not None, chain(inbox_posts, own_posts, github_activities)),
             key=lambda post: post.published,
             reverse=True
         )

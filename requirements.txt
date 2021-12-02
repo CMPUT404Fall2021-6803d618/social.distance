@@ -27,4 +27,5 @@ django-heroku
 
 # utils
 requests
+python-dateutil==2.6.1
 
