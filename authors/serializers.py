@@ -22,6 +22,7 @@ class AuthorSerializer(serializers.ModelSerializer):
     host = serializers.URLField(required=False)
 
     profileImage = serializers.URLField(required=False, allow_null=True, allow_blank=True, source="profile_image")
+    profileColor = serializers.CharField(required=False, allow_null=True, allow_blank=True, source="profile_color")
 
     def to_representation(self, instance):
         return {
@@ -92,7 +93,7 @@ class AuthorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Author
         # show these fields in response
-        fields = ['type', 'id', 'host', 'displayName', 'url', 'github', 'profileImage']
+        fields = ['type', 'id', 'host', 'displayName', 'url', 'github', 'profileImage', 'profileColor']
 
 
 class FollowSerializer(serializers.ModelSerializer):
