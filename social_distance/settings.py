@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'posts',
     'nodes',
+    'github',
     'social_distance',
 ]
 

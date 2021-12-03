@@ -6,7 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from authors.models import Author
 
 from authors.serializers import AuthorSerializer
-
+from .utils import random_profile_color
 
 class CommonAuthenticateSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
@@ -56,7 +56,8 @@ class RegisterSerializer(CommonAuthenticateSerializer):
         user.set_password(validated_data['password'])
         user.save()
         author = Author(user=user, display_name=validated_data.get(
-            'display_name', user.username), github_url=validated_data.get('github_url'), is_internal=True)
+            'display_name', user.username), github_url=validated_data.get('github_url'), profile_color=random_profile_color(), is_internal=True)
+
         # modify url to be server path
         author.update_fields_with_request(self.context['request'])
         author.save()

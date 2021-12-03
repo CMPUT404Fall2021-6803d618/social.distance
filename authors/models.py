@@ -9,6 +9,8 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
+from social_distance.utils import random_profile_color
+
 
 # Create your models here.
 class Author(models.Model):
@@ -22,6 +24,7 @@ class Author(models.Model):
     host = models.URLField(editable=False, max_length=500) # the host server node url, ours is https://social-distance-api.herokuapp.com/
 
     profile_image = models.URLField(max_length=500, null=True, blank=True)
+    profile_color = models.CharField(max_length=10, null=True, blank=True, default=random_profile_color())
 
     is_internal = models.BooleanField(default=False)
 
