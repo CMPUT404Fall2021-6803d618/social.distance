@@ -13,7 +13,6 @@ urlpatterns = [
 
     path('<path:author_id>/stream/', StreamList.as_view(), name="author-stream"), # internal
     path('<path:author_id>/posts/', include("posts.urls_posts")),
-    path('<path:author_id>/post/', include("posts.urls_post")),
 
     path('<path:author_id>/images/<str:image_post_id>/', get_image, name="image-detail"),
     path('<path:author_id>/images/', upload_image, name="upload-image"),
