@@ -271,7 +271,7 @@ class CommentListTestCase(TestCase):
     def test_get_comment_normal(self):
         self.setup_objects()
         res = self.client.get(
-            f'/author/{self.author.id}/posts/{self.post.id}/comment/{self.comment1.id}/', 
+            f'/author/{self.author.id}/posts/{self.post.id}/comments/{self.comment1.id}/', 
             format='json'
         )
         content = json.loads(res.content)
@@ -409,7 +409,7 @@ class LikeTestCase(TestCase):
         self.setup_likes(self.post.url)
 
         res = self.client.get(
-            f'/author/{self.author.id}/post/{self.post.id}/likes/',
+            f'/author/{self.author.id}/posts/{self.post.id}/likes/',
             format="json"
         )
         content = json.loads(res.content)
@@ -432,7 +432,7 @@ class LikeTestCase(TestCase):
         self.setup_likes(self.comment.url)
 
         res = self.client.get(
-            f'/author/{self.author.id}/post/{self.post.id}/comments/{self.comment.id}/likes/',
+            f'/author/{self.author.id}/posts/{self.post.id}/comments/{self.comment.id}/likes/',
             format="json"
         )
         content = json.loads(res.content)
