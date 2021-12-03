@@ -26,6 +26,8 @@ class Author(models.Model):
     profile_image = models.URLField(max_length=500, null=True, blank=True)
     profile_color = models.CharField(max_length=10, null=True, blank=True, default=random_profile_color())
 
+    is_internal = models.BooleanField(default=False)
+
     # following: Authors, added by related name, see AuthorFollowingRelation
     # followers: Authors, added by related name, see AuthorFollowingRelation
 
@@ -35,13 +37,6 @@ class Author(models.Model):
         else:
             display_name = self.display_name
         return display_name + " (" + str(self.id) + ")"
-    
-    def is_internal(self):
-        try:
-            _ = Request('GET', unquote(self.id)).prepare()
-            return False
-        except:
-            return True
 
     # used by serializer
     def get_public_id(self):

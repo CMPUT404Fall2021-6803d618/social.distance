@@ -66,7 +66,7 @@ class AuthorSerializer(serializers.ModelSerializer):
             raise exceptions.ParseError(
                 "multiple author objects with the same id or url is detected. How did you do that?")
         except:
-            validated_data['id'] = validated_data.get('id', str(uuid.uuid4()))
+            validated_data['id'] = str(uuid.uuid4())
             updated_author = Author.objects.create(**validated_data)
 
         return updated_author
