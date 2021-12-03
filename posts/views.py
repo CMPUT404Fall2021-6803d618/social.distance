@@ -5,6 +5,8 @@ from itertools import chain
 from django.http.response import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.contrib.contenttypes.models import ContentType
+from django.db.models.query_utils import Q
+
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from drf_spectacular.types import OpenApiTypes
 
@@ -367,7 +369,7 @@ class LikesPostList(APIView):
             error_msg = "Author or Post id not found"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
-        likes = Like.objects.filter(object=post.url)
+        likes = Like.objects.filter(Q(object=post.url) | Q(object=post.url[:-1]))
         serializer = LikeSerializer(likes, many=True)
         return Response(serializer.data)
 
