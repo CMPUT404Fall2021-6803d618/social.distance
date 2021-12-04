@@ -1,4 +1,5 @@
 import base64
+import re
 import requests
 from itertools import chain
 
@@ -18,7 +19,7 @@ from drf_spectacular.utils import OpenApiExample, extend_schema
 
 from authors.models import Author, InboxObject
 from authors.serializers import AuthorSerializer
-from nodes.models import connector_service
+from nodes.models import connector_service, Node
 from github.utils import get_github_activity
 
 from .models import Post, Comment, Like
@@ -294,7 +295,7 @@ class CommentList(ListCreateAPIView):
             return Response(error_msg, status=status.HTTP_400_BAD_REQUEST)
 
         comment_author_set = Author.objects.filter(url=comment_author_url)
-        # check if author is local
+        # check if the author who is commenting is local
         if comment_author_set and comment_author_set.get().is_internal:
             # local author
             comment_author = comment_author_set.get()
@@ -315,10 +316,26 @@ class CommentList(ListCreateAPIView):
             )
             comment.update_fields_with_request(request)
             serializer = CommentSerializer(comment, many=False)
-            return Response(serializer.data)
         else:
             return Response(comment_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            # notify if the post author is foreign
+            if not post.author.is_internal:
+                nodes = [x for x in Node.objects.all() if x.host_url in post.author.url]
+                if len(nodes) != 1:
+                    raise exceptions.NotFound("cannot find the node from foreign author url")
+                node = nodes[0]
+                # send to {post.origin}/comments/
+                # print("POST comments: sending to {}".format(node.host_url))
+                origin_url = post.origin if post.origin[-1] != "/" else post.origin[:-1]
+                # print("POST comments: request data: {}".format(serializer.data))
+                res = requests.post(origin_url + '/comments/', json=serializer.data, auth=node.get_basic_auth_tuple())
+                # print("POST comments: response: {}".format(res.text))
+        except:
+            pass
+
+        return Response(serializer.data)
 
 class CommentDetail(APIView):
     def get_serializer_class(self):
@@ -473,7 +490,9 @@ class LikedList(APIView):
         like_ser = LikeSerializer(data=request.data, context={
                                   'author_id': author_id})
         if like_ser.is_valid():
-            like = like_ser.save()
+            like = like_ser.save() # saved locally first
+
+
             res = connector_service.notify_like(like, request=request)
             return Response({'res': res, 'like': like_ser.validated_data})
         return Response(like_ser.errors, status=status.HTTP_400_BAD_REQUEST)

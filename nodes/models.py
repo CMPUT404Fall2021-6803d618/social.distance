@@ -12,7 +12,7 @@ from rest_framework import exceptions
 from authors.models import Author, Follow, InboxObject
 from authors.serializers import FollowSerializer
 
-from posts.models import Like, Post
+from posts.models import Comment, Like, Post
 from posts.serializers import LikeSerializer, PostSerializer
 
 import logging
@@ -82,9 +82,35 @@ class ConnectorService:
         # returns (host_url, inbox_url, author_url)
         return host + author_path + 'inbox/', host, host + author_path
 
+
     @silent_500
     def notify_like(self, like: Like, request: Request = None):
-        inbox_url, host_url, author_url = self.get_inbox_and_host_from_url(like.object)
+        def get_poster_url(like):
+            # extract the post url from object field
+            post_id = re.search(r'.*\/posts\/([^\/]+).?', like.object).group(1)
+
+            try:
+                return Post.objects.get(id=post_id).source
+            except:
+                raise exceptions.NotFound(detail="cannot find the post which matches the object url")
+        
+        def get_commenter_url(like):
+            # get the cached author
+            author_id = re.search(r'.*author\/([^\/]*)', like.object).group(1)
+            # print(">>>", author_id)
+            cached_author = Author.objects.get(id=author_id)
+            # print(">>>", cached_author, cached_author.url)
+            # get the actual url of the author
+            return cached_author.url
+
+        if 'comment' in like.object:
+            author_some_url = get_commenter_url(like)
+        else:
+            author_some_url = get_poster_url(like)
+        like.object = author_some_url
+
+        # send to the post's source author inbox of this same like object
+        inbox_url, host_url, author_url = self.get_inbox_and_host_from_url(author_some_url)
 
         if not self._same_host_and_save_to_inbox(request, host_url, inbox_item=like, inbox_author_url=author_url):
             self._find_node_and_post_to_inbox(inbox_url, host_url, LikeSerializer(like).data)
