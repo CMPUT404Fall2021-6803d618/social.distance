@@ -45,8 +45,10 @@ def get_author_and_post(author_id, post_id):
 @api_view(['GET'])
 def get_all_posts(request):
     """
-    THIS IS NOT IN THE SPEC. SOMEONE PLEASE BE MORE RESPONSIBLE FOR THE SPEC.
-    IT'S SO BARELY USABLE THAT I HAVE TO SHOUT. -Lucas
+    ## Description:
+    Get all posts from this server
+    ## Responses:
+    **200**: successful GET request with data
     """
     posts = Post.objects.all()
     posts = list(filter(lambda x: x.author.is_internal, posts))
@@ -81,6 +83,20 @@ class StreamList(ListAPIView):
             key=lambda post: post.published,
             reverse=True
         )
+
+    def get(self, request, *args, **kwargs):
+        """
+        **[INTERNAL]**
+        ## Description:
+        Get the author's stream that includes the following:
+        * Author's own posts
+        * Author's inbox
+        * Author's github events (if github_url is provided)
+        ## Responses:
+        **200**: for successful GET request <br>
+        **403**: if the author is not authenticated
+        """
+        return super().list(request, *args, **kwargs)
 
 class PostDetail(APIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -457,8 +473,8 @@ class LikedList(APIView):
         create a like object and send to its target author <br>
         NOTE: authenticated as the sender author itself
         ## Responses:
-        **200**: for successful POST request
-        **400**: if the payload failed the serializer check
+        **200**: for successful POST request <br>
+        **400**: if the payload failed the serializer check <br>
         **404**: if the author does not exist
         """
         return self.internally_send_like(request, author_id)
@@ -481,6 +497,14 @@ class LikedList(APIView):
 
 @api_view(['GET'])
 def get_image(request, author_id, image_post_id):
+    """
+    **[INTERNAL]** <br>
+    ## Description:
+    Used internally to get a image
+    ## Responses:
+    **200**: for successful GET request
+    **403**: if user is not authenticated as author
+    """
     author, post = get_author_and_post(author_id, image_post_id)
 
     # needs authentication if image is PRIVATE
@@ -501,6 +525,7 @@ def get_image(request, author_id, image_post_id):
 @api_view(['POST'])
 def upload_image(request, author_id):
     """
+    **[INTERNAL]** <br>
     ## Description
     POST to save a image file under the author.
     returns the link to the image.
@@ -569,8 +594,8 @@ def share_post_friends(request, author_id, post_id):
     nothing, but requires to be authenticated as the author who is trying to reshare.
 
     ## Response
-    **200**: Post that is created
-    **403**: if the user is not local or if it's not authenticated
+    **200**: Post that is created <br>
+    **403**: if the user is not local or if it's not authenticated <br>
     **404**: author or post does not exist
     """
 

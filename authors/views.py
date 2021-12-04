@@ -488,6 +488,19 @@ class FollowingList(ListAPIView):
        
         return followings.exclude(id__in=followings_to_delete)
 
+    @extend_schema(
+        responses=FollowSerializer(many=True)
+    )
+    def get(self, request, *args, **kwargs):
+        """
+        **[INTERNAL]**
+        ## Description:
+        List all the authors that this author is currently following
+        ## Responses:
+        **200**: for successful GET request
+        """
+        return super().list(request, *args, **kwargs)
+
 class FollowingDetail(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -496,13 +509,18 @@ class FollowingDetail(APIView):
     )
     def post(self, request, author_id, foreign_author_url):
         """
-        **[Internal]** <br>
+        **[INTERNAL]** <br>
+        ## Description:
         the /author/<author_id>/friend_request/<foreign_author_url>/ endpoint
         - author_id: anything other than slash, but we hope it's a uuid
         - foreign_author_url: anything, but we hope it's a valid url.
 
         used only by local users, jwt authentication required. <br>
         Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
+        ## Responses:
+        **200**: for successful POST request <br>
+        **403**: if the follow request already exist <br>
+        **404**: if the author_id does not exist
         """
 
         try:
@@ -537,8 +555,8 @@ class FollowingDetail(APIView):
 
     def delete(self, request, author_id, foreign_author_url):
         """
+        **[INTERNAL]** <br>
         ## Description: 
-        **[Internal]** <br>
         Should be called when author_id's author no longer wants to follow foreign_author_url's author <br>
         This can happen when the author is already following (status ACCEPTED) <br>
         Or author wants to remove its friend/follow request (status PENDING)
@@ -586,6 +604,7 @@ class ForeignAuthorList(ListAPIView):
 
     def get(self, request, node_id):
         """
+        **[INTERNAL]** <br>
         ## Description:
         Get all authors from a foreign server node by calling their /authors/ endpoint
         ## Responses:
