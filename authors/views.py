@@ -504,15 +504,21 @@ class FollowingDetail(APIView):
         used only by local users, jwt authentication required. <br>
         Its job is to fire a POST to the foreign author's inbox with a FriendRequest json object.
         """
-
         try:
             author = Author.objects.get(id=author_id)
         except:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         # get that foreign author's json object first
-        print(foreign_author_url)
-        foreign_author_json = requests.get(foreign_author_url).json()
+        print("following: foreign author url: ", foreign_author_url)
+
+        nodes = [x for x in Node.objects.all() if x.host_url in foreign_author_url]
+        if len(nodes) != 1:
+            raise exceptions.NotFound("cannot find the node from foreign author url")
+
+        node = nodes[0]
+        foreign_author_json = requests.get(foreign_author_url, auth=node.get_basic_auth_tuple()).json()
+        print("following: foreign author: ", foreign_author_json)
 
         # check for foreign author validity
         foreign_author_ser = AuthorSerializer(data=foreign_author_json)
