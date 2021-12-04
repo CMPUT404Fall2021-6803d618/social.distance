@@ -114,8 +114,10 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'social.distance API',
-    'DESCRIPTION': 'social.distance is a CMPUT404 project',
-    'VERSION': '0.0.1',
+    'DESCRIPTION': 'social.distance is a project made for UofA CMPUT404 course. <br> \
+        Click on each of the endpoint before for more details. <br> \
+        Note that any endpoints with description marked with **[INTERNAL]** are for internal use only.',
+    'VERSION': '1.0.0',
 }
 
 MIDDLEWARE = [
