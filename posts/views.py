@@ -400,7 +400,7 @@ class LikesCommentList(APIView):
             error_msg = "Comment id is not valid"
             return Response(error_msg, status=status.HTTP_404_NOT_FOUND)
 
-        likes = Like.objects.filter(object=comment.url)
+        likes = Like.objects.filter(Q(object=comment.url) | Q(object=comment.url[:-1]))
         serializer = LikeSerializer(likes, many=True)
         return Response(serializer.data)
 
