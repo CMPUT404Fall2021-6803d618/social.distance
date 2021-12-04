@@ -526,16 +526,23 @@ class FollowingDetail(APIView):
             author = Author.objects.get(id=author_id)
         except:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
+            
         # get that foreign author's json object first
         print("following: foreign author url: ", foreign_author_url)
 
-        nodes = [x for x in Node.objects.all() if x.host_url in foreign_author_url]
-        if len(nodes) != 1:
-            raise exceptions.NotFound("cannot find the node from foreign author url")
+        # try without the auth
+        # can either be a local author being followed or foreign server does not require auth
+        response = requests.get(foreign_author_url)
+        
+        if response.status_code != 200:
+            nodes = [x for x in Node.objects.all() if x.host_url in foreign_author_url]
+            if len(nodes) != 1:
+                raise exceptions.NotFound("cannot find the node from foreign author url")
 
-        node = nodes[0]
-        foreign_author_json = requests.get(foreign_author_url, auth=node.get_basic_auth_tuple()).json()
+            node = nodes[0]
+            response = requests.get(foreign_author_url, auth=node.get_basic_auth_tuple())
+        
+        foreign_author_json = response.json()
         print("following: foreign author: ", foreign_author_json)
 
         # check for foreign author validity
