@@ -49,4 +49,5 @@ jobs:
       env:
         DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/github_actions
         SECRET_KEY: asdfj234rw0d98f7axcij1kl23j4SJDRasdf23l4s9df8___asdfa9asdfj213jmcvXSDM234zxcvfsd4
+        HOST_URL: http://localhost:8000
         DEBUG: True
