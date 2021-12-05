@@ -457,6 +457,7 @@ class FollowingList(ListAPIView):
     serializer_class = FollowSerializer
     pagination_class = FollowingsPagination
 
+
     def get_queryset(self):
         try:
             author = Author.objects.get(id=self.kwargs.get('author_id'))
@@ -476,6 +477,15 @@ class FollowingList(ListAPIView):
             else:
                 request_url = foreign_author_url + "/followers/" + author.url
             response = requests.get(request_url)
+
+            if response.status_code > 204:
+                # try again but with author.id instead of author.url
+                if foreign_author_url.endswith("/"):
+                    request_url = foreign_author_url + "followers/" + author.id
+                else:
+                    request_url = foreign_author_url + "/followers/" + author.id
+                response = requests.get(request_url)
+
             # any status code < 400 indicate success
             if response.status_code < 400 and following.status == Follow.FollowStatus.PENDING:
                 # foreign author accepted the follow request
