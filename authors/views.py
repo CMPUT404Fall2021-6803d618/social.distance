@@ -628,8 +628,11 @@ class FollowingDetail(APIView):
             request_url = foreign_author_url + "/followers/" + author.url
         
         try:
-            host_url = foreign_author.host
-            node = Node.objects.get(Q(host_url=host_url) | Q(host_url=host_url[:-1]))
+            nodes = [x for x in Node.objects.all() if x.host_url in request_url]
+            if len(nodes) != 1:
+                raise exceptions.NotFound("following:delete: cannot find the node from foreign author url")
+
+            node = nodes[0]
             # ignoring the response here as we can't control the remote server
             # but at least we tried to notify them 
             requests.delete(request_url, auth=node.get_basic_auth_tuple())
