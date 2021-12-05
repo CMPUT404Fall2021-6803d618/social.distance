@@ -42,6 +42,7 @@ jobs:
         DJANGO_SUPERUSER_USERNAME: admin
         DJANGO_SUPERUSER_PASSWORD: admin
         DJANGO_SUPERUSER_EMAIL: admin@example.com
+        HOST_URL: http://localhost:8000
         DEBUG: True
     - name: Run tests
       run: python manage.py test
