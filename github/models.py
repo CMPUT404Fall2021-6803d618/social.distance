@@ -68,7 +68,7 @@ class GithubEvent(models.Model):
     
     # here we are creating a fake Post object to return to the front end
     # but this fake Post is NOT stored into the database
-    def event_to_post(self):
+    def event_to_post(self, author):
         data = {
             "title": "GitHub " + self.type,
             "source": self.url,
@@ -81,7 +81,7 @@ class GithubEvent(models.Model):
             "is_github": True
         }
         
-        fake_post = Post(**data, author=Author.objects.get(github_url=self.url))
+        fake_post = Post(**data, author=author)
 
         return fake_post
 

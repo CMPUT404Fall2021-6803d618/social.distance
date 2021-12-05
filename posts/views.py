@@ -77,7 +77,7 @@ class StreamList(ListAPIView):
 
         inbox_posts = [inbox.content_object for inbox in InboxObject.objects.filter(author=author, content_type=post_content_type)]
         own_posts = Post.objects.filter(author=author, unlisted=False)
-        github_activities = get_github_activity(author.github_url)
+        github_activities = get_github_activity(author.github_url, author)
 
         return sorted(
             filter(lambda post: post is not None, chain(inbox_posts, own_posts, github_activities)),

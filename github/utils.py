@@ -10,7 +10,7 @@ def extract_username_from_url(github_url):
     # match object is None if no match is found
     return match.group("username") if match else ""
 
-def github_event_to_post_adapter(github_events, github_url):
+def github_event_to_post_adapter(github_events, github_url, author):
     objects = []
     for event in github_events:
         # we only support certain events
@@ -30,13 +30,13 @@ def github_event_to_post_adapter(github_events, github_url):
             github_event.create_event_content(event)
             github_event.save()
     
-        github_event_post = github_event.event_to_post()
+        github_event_post = github_event.event_to_post(author)
         if github_event_post:
             objects.append(github_event_post)
 
     return objects
 
-def get_github_activity(github_url):
+def get_github_activity(github_url, author):
     if github_url is None or "github.com/" not in github_url:
         return []
     
@@ -59,6 +59,6 @@ def get_github_activity(github_url):
         print(f"Request returned body: {response.text}")
         return []
 
-    return github_event_to_post_adapter(response.json(), github_url)
+    return github_event_to_post_adapter(response.json(), github_url, author)
 
     
