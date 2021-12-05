@@ -1,4 +1,5 @@
 import uuid
+import os
 from django.forms.models import model_to_dict
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -25,9 +26,11 @@ class AuthorSerializer(serializers.ModelSerializer):
     profileColor = serializers.CharField(required=False, allow_null=True, allow_blank=True, source="profile_color")
 
     def to_representation(self, instance):
+        host_url = os.getenv('HOST_URL')
+        host_url = host_url[:-1] if host_url[-1] == '/' else host_url
         return {
             **super().to_representation(instance),
-            'id': instance.get_public_id()
+            'id': host_url + '/author/' + instance.id + '/',
         }
 
     def update(self, instance, validated_data):
