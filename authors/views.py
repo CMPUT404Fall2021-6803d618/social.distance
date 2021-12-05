@@ -14,6 +14,7 @@ from django.db.models.query_utils import Q
 from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
 from nodes.models import connector_service, Node
+from social_distance.utils import *
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -459,20 +460,6 @@ class FollowingList(ListAPIView):
 
 
     def get_queryset(self):
-        def try_get(request_url):
-            # try without the auth
-            # can either be a local author being followed or foreign server does not require auth
-            response = requests.get(request_url)
-            
-            if response.status_code != 200:
-                nodes = [x for x in Node.objects.all() if x.host_url in request_url]
-                if len(nodes) != 1:
-                    raise exceptions.NotFound("cannot find the node from foreign author url")
-
-                node = nodes[0]
-                response = requests.get(request_url, auth=node.get_basic_auth_tuple())
-            return response
-
         try:
             author = Author.objects.get(id=self.kwargs.get('author_id'))
         except Author.DoesNotExist:
@@ -626,16 +613,19 @@ class FollowingDetail(APIView):
             request_url = foreign_author_url + "followers/" + author.url
         else:
             request_url = foreign_author_url + "/followers/" + author.url
+        request_url = request_url + '/' if not request_url.endswith('/') else request_url
         
         try:
-            nodes = [x for x in Node.objects.all() if x.host_url in request_url]
-            if len(nodes) != 1:
-                raise exceptions.NotFound("following:delete: cannot find the node from foreign author url")
+            res = try_delete(request_url)
+            print("following:delete: response: ", res, " status: ", res.status_code, " text: ", res.text)
 
-            node = nodes[0]
-            # ignoring the response here as we can't control the remote server
-            # but at least we tried to notify them 
-            requests.delete(request_url, auth=node.get_basic_auth_tuple())
+            if (foreign_author_url.endswith("/")):
+                request_url = foreign_author_url + "followers/" + author.id
+            else:
+                request_url = foreign_author_url + "/followers/" + author.id
+            request_url = request_url + '/' if not request_url.endswith('/') else request_url
+            res = try_delete(request_url)
+            print("following:delete: response tried with id: ", res, " status: ", res.status_code, " text: ", res.text)
         except Node.DoesNotExist:
             print("failed to notify remote server of the unfollowing")
             print("Reason: Remote Server not connected")
