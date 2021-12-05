@@ -22,7 +22,7 @@ class AuthTestCase(TestCase):
         }
         '''
         self.assertEqual(res.data['author']['displayName'], payload['username'])
-        self.assertTrue(res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
+        self.assertTrue(res.data['author']['id'] + '/' == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
         self.assertEqual(res.data['author']['type'], 'author')
         self.assertEqual(res.status_code, 200)
 
@@ -46,7 +46,7 @@ class AuthTestCase(TestCase):
         }
         '''
         self.assertEqual(res.data['author']['displayName'], payload['display_name'])
-        self.assertTrue(res.data['author']['id'] == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
+        self.assertTrue(res.data['author']['id'] + '/' == res.data['author']['url'] and res.data['author']['id'].startswith('http'))
         self.assertEqual(res.data['author']['type'], 'author')
 
         self.assertEqual(res.data['author']['github'], payload['github_url'])

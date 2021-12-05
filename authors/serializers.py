@@ -25,9 +25,11 @@ class AuthorSerializer(serializers.ModelSerializer):
     profileColor = serializers.CharField(required=False, allow_null=True, allow_blank=True, source="profile_color")
 
     def to_representation(self, instance):
+        id = instance.get_public_id()
+        id = id[:-1] if id.endswith('/') else id
         return {
             **super().to_representation(instance),
-            'id': instance.get_public_id()
+            'id': id
         }
 
     def update(self, instance, validated_data):

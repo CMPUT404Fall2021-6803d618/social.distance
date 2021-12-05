@@ -616,6 +616,9 @@ class FollowingDetail(APIView):
         
         follow_object.delete()
 
+        if author.is_internal and foreign_author.is_internal:
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         # send a request to the foreign server telling them to delete the follower
         if (foreign_author_url.endswith("/")):
             request_url = foreign_author_url + "followers/" + author.url
@@ -623,23 +626,27 @@ class FollowingDetail(APIView):
             request_url = foreign_author_url + "/followers/" + author.url
         request_url = request_url + '/' if not request_url.endswith('/') else request_url
         
-        try:
-            res = try_delete(request_url)
-            print("following:delete: response: ", res, " status: ", res.status_code, " text: ", res.text)
+        # try without the auth
+        response = requests.delete(request_url)
 
-            if (foreign_author_url.endswith("/")):
-                request_url = foreign_author_url + "followers/" + author.id
-            else:
-                request_url = foreign_author_url + "/followers/" + author.id
-            request_url = request_url + '/' if not request_url.endswith('/') else request_url
-            res = try_delete(request_url)
-            print("following:delete: response tried with id: ", res, " status: ", res.status_code, " text: ", res.text)
-        except Node.DoesNotExist:
-            print("failed to notify remote server of the unfollowing")
-            print("Reason: Remote Server not connected")
-        except requests.exceptions.RequestException as e:
-            print("failed to notify remote server of the unfollowing")
-            print("Reason: Remote Request Failed: " + e)
+        if response.status_code > 204:
+            try:
+                res = try_delete(request_url)
+                print("following:delete: response: ", res, " status: ", res.status_code, " text: ", res.text)
+
+                if (foreign_author_url.endswith("/")):
+                    request_url = foreign_author_url + "followers/" + author.id
+                else:
+                    request_url = foreign_author_url + "/followers/" + author.id
+                request_url = request_url + '/' if not request_url.endswith('/') else request_url
+                res = try_delete(request_url)
+                print("following:delete: response tried with id: ", res, " status: ", res.status_code, " text: ", res.text)
+            except Node.DoesNotExist:
+                print("failed to notify remote server of the unfollowing")
+                print("Reason: Remote Server not connected")
+            except requests.exceptions.RequestException as e:
+                print("failed to notify remote server of the unfollowing")
+                print("Reason: Remote Request Failed: " + e)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
         
