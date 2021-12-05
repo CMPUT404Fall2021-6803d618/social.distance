@@ -490,7 +490,15 @@ class FollowingList(ListAPIView):
                     request_url = foreign_author_url + "/followers/" + author.id
                 print("following: request_url: ", request_url)
                 response = try_get(request_url)
-                print("following: response: ", response)
+
+            if response.status_code == 200:
+                try:
+                    possible_body = response.json()
+                    if not possible_body.get('result'):
+                        response.status_code = 404
+                except Exception as e:
+                    print("following list get: weird things happen when response was 200: ", e) 
+            print("following: response: ", response)
 
             # any status code < 400 indicate success
             if response.status_code < 400 and following.status == Follow.FollowStatus.PENDING:
