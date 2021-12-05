@@ -30,7 +30,7 @@ class AuthorSerializer(serializers.ModelSerializer):
         host_url = host_url[:-1] if host_url[-1] == '/' else host_url
         return {
             **super().to_representation(instance),
-            'id': host_url + '/author/' + instance.id + '/',
+            'id': host_url + '/author/' + str(instance.id) + '/',
         }
 
     def update(self, instance, validated_data):

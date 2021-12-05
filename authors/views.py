@@ -422,6 +422,8 @@ class FollowerDetail(APIView):
             follower_serializer = self.get_follower_serializer_from_request(
                 request, foreign_author_url)
             if follower_serializer.is_valid():
+                print("foreign_author_url: ", foreign_author_url)
+                print("validated actual foreign author's url: ", follower_serializer.validated_data['url'])
                 if foreign_author_url != follower_serializer.validated_data['url']:
                     return Response("payload author's url does not match that in request url", status=status.HTTP_400_BAD_REQUEST)
                 follower = follower_serializer.save()
@@ -583,7 +585,7 @@ class FollowingDetail(APIView):
             foreign_author = Author.objects.get(url=foreign_author_url)
             follow_object = Follow.objects.get(actor=author, object=foreign_author)
         except Author.DoesNotExist as e:
-            return Response(e.message, status=status.HTTP_404_NOT_FOUND)
+            return Response(str(e), status=status.HTTP_404_NOT_FOUND)
         except Follow.DoesNotExist:
             error_msg = "the follow relationship does not exist between the two authors"
             return Response(error_msg, status=status.HTTP_400_BAD_REQUEST)

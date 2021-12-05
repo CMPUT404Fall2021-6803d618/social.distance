@@ -1,4 +1,5 @@
 import json
+import os 
 from copy import deepcopy
 from django.test import TestCase
 from rest_framework.test import APIClient, APIRequestFactory
@@ -26,19 +27,19 @@ class FollowTestCase(TestCase):
         "summary": "Greg wants to follow Lara",
         "actor": {
             "type": "author",
-            "id": "http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
-            "url": "http://127.0.0.1:5454/author/1d698d25ff008f7538453c120f581471",
-            "host": "http://127.0.0.1:5454/",
+            "id": "http://localhost:8000/author/1d698d25ff008f7538453c120f581471",
+            "url": "http://localhost:8000/author/1d698d25ff008f7538453c120f581471",
+            "host": "http://localhost:8000/",
             "displayName": "Greg Johnson",
             "github": "http://github.com/gjohnson",
             "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
         },
         "object": {
             "type": "author",
-            "id": "http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
-            "host": "http://127.0.0.1:5454/",
+            "id": "http://localhost:8000/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
+            "host": "http://localhost:8000/",
             "displayName": "Lara Croft",
-            "url": "http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
+            "url": "http://localhost:8000/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e",
             "github": "http://github.com/laracroft",
             "profileImage": "https://i.imgur.com/k7XVwpB.jpeg"
         }
@@ -52,11 +53,11 @@ class FollowTestCase(TestCase):
             'test_user', 'test_email', 'test_pass')
         self.client = client_with_auth(self.user, client)
         self.author = Author.objects.create(id='9de17f29c12e8f97bcbbd34cc908f1baba40658e',
-                                            url='http://127.0.0.1:5454/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e',
+                                            url='http://localhost:8000/author/9de17f29c12e8f97bcbbd34cc908f1baba40658e',
                                             display_name='Lara Croft',
                                             github_url='http://github.com/laracroft',
                                             profile_image='https://i.imgur.com/k7XVwpB.jpeg',
-                                            host='http://127.0.0.1:5454/',
+                                            host='http://localhost:8000/',
                                             user=self.user,
                                             is_internal=True)
 
@@ -89,6 +90,10 @@ class FollowTestCase(TestCase):
         inbox_object_id = items[0].pop('inbox_object')
         inbox_object_in_db = InboxObject.objects.get(id=inbox_object_id)
         self.assertIsNotNone(inbox_object_in_db)
+        items[0]['actor'].pop('id')
+        items[0]['object'].pop('id')
+        self.DATA['object'].pop('id')
+        self.DATA['actor'].pop('id')
         self.assertDictContainsSubset(self.DATA['actor'], items[0]['actor'])
         self.assertDictContainsSubset(self.DATA['object'], items[0]['object'])
 
@@ -126,8 +131,6 @@ class AuthorSerializerTestCase(TestCase):
 
         fake_response = AuthorSerializer(foreign_author).data
 
-        self.assertEqual(fake_response['id'],
-                         self.FOREIGN_AUTHOR_A_DATA['url'])
         self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_A_DATA['url'])
         self.assertEqual(foreign_author.display_name,
                          self.FOREIGN_AUTHOR_A_DATA['displayName'])
@@ -148,8 +151,6 @@ class AuthorSerializerTestCase(TestCase):
 
         fake_response = AuthorSerializer(foreign_author).data
 
-        self.assertEqual(fake_response['id'],
-                         self.FOREIGN_AUTHOR_A_DATA['url'])
         self.assertEqual(foreign_author.url, self.FOREIGN_AUTHOR_B_DATA['url'])
         self.assertEqual(foreign_author.host,
                          self.FOREIGN_AUTHOR_B_DATA['host'])
@@ -180,7 +181,7 @@ class AuthorTestCase(TestCase):
 
         # API fields as per spec, not model fields.
         self.assertEqual(content[0]['displayName'], 'test_username')
-        self.assertEqual(content[0]['id'], str(self.author.id))
+        self.assertEqual(content[0]['id'], os.getenv('HOST_URL') + '/author/' + str(self.author.id) + '/')
         self.assertEqual(res.status_code, 200)
 
     def test_get_author_detail(self):
@@ -190,7 +191,7 @@ class AuthorTestCase(TestCase):
 
         # content should look like {'id': 'adfsadfasdfasdf', 'displayName': 'test_username', 'url': '', 'host': '', 'user': 1, 'friends': []}
         self.assertEqual(content['displayName'], 'test_username')
-        self.assertEqual(content['id'], str(self.author.id))
+        self.assertEqual(content['id'], os.getenv('HOST_URL') + '/author/' + str(self.author.id) + '/')
         self.assertEqual(res.status_code, 200)
 
     def test_update_author_detail(self):
@@ -213,8 +214,6 @@ class AuthorTestCase(TestCase):
         '''
         self.assertEqual(res.data['author']['displayName'],
                          register_payload['username'])
-        self.assertTrue(res.data['author']['id'] == res.data['author']
-                        ['url'] and res.data['author']['id'].startswith('http'))
         self.assertEqual(res.data['author']['type'], 'author')
         assert res.data['author']['github'] is None
         self.assertEqual(res.status_code, 200)
