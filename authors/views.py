@@ -459,6 +459,20 @@ class FollowingList(ListAPIView):
 
 
     def get_queryset(self):
+        def try_get(request_url):
+            # try without the auth
+            # can either be a local author being followed or foreign server does not require auth
+            response = requests.get(request_url)
+            
+            if response.status_code != 200:
+                nodes = [x for x in Node.objects.all() if x.host_url in request_url]
+                if len(nodes) != 1:
+                    raise exceptions.NotFound("cannot find the node from foreign author url")
+
+                node = nodes[0]
+                response = requests.get(request_url, auth=node.get_basic_auth_tuple())
+            return response
+
         try:
             author = Author.objects.get(id=self.kwargs.get('author_id'))
         except Author.DoesNotExist:
@@ -477,7 +491,8 @@ class FollowingList(ListAPIView):
             else:
                 request_url = foreign_author_url + "/followers/" + author.url
             print("following: request_url: ", request_url)
-            response = requests.get(request_url)
+            response = try_get(request_url)
+
             print("following: response: ", response)
 
             if response.status_code > 204:
@@ -487,7 +502,7 @@ class FollowingList(ListAPIView):
                 else:
                     request_url = foreign_author_url + "/followers/" + author.id
                 print("following: request_url: ", request_url)
-                response = requests.get(request_url)
+                response = try_get(request_url)
                 print("following: response: ", response)
 
             # any status code < 400 indicate success
