@@ -14,7 +14,7 @@ from django.db.models.query_utils import Q
 from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
 from nodes.models import connector_service, Node
-from social_distance.utils import *
+from posts.utils import *
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
