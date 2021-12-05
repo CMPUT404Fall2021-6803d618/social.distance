@@ -421,6 +421,8 @@ class FollowerDetail(APIView):
             # external author: upcreate it first
             follower_serializer = self.get_follower_serializer_from_request(
                 request, foreign_author_url)
+            print("foreign author url: ", foreign_author_url)
+            print("follow serializer: ", follower_serializer)
             if follower_serializer.is_valid():
                 if foreign_author_url != follower_serializer.validated_data['url']:
                     return Response("payload author's url does not match that in request url", status=status.HTTP_400_BAD_REQUEST)
