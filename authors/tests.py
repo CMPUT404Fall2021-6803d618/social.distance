@@ -213,7 +213,7 @@ class AuthorTestCase(TestCase):
         '''
         self.assertEqual(res.data['author']['displayName'],
                          register_payload['username'])
-        self.assertTrue(res.data['author']['id'] + '/' == res.data['author']
+        self.assertTrue(res.data['author']['id'] == res.data['author']
                         ['url'] and res.data['author']['id'].startswith('http'))
         self.assertEqual(res.data['author']['type'], 'author')
         assert res.data['author']['github'] is None

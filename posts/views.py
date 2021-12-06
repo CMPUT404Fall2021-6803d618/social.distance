@@ -283,7 +283,7 @@ class CommentList(ListCreateAPIView):
         # '?' excludes query parameter
         request_url = request.build_absolute_uri('?')
         response.data["id"] = request_url
-        response.data["post"] = request_url.replace("comments/", "")
+        response.data["post"] = request_url.replace("/comments/", "")
         return response
 
     def post(self, request, author_id, post_id):

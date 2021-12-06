@@ -48,7 +48,8 @@ class Author(models.Model):
 
     # used internally
     def get_absolute_url(self):
-        return reverse('author-detail', args=[str(self.id)])
+        url = reverse('author-detail', args=[str(self.id)]) 
+        return url[:-1] if url.endswith('/') else url # get rid of slash for url
 
     # clean up whenever trying to validate model object
     def clean(self):
