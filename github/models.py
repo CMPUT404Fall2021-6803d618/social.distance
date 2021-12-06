@@ -42,7 +42,7 @@ class GithubEvent(models.Model):
                     sha = commit["sha"]
                     message = commit["message"]
                     sha_url = commit["url"].replace("repos/", "").replace("api", "www")
-                    content += f"[{sha}]({sha_url}): {message}"
+                    content += f"[{sha}]({sha_url}): {message} <br>"
             elif github_event["type"] == GithubEvent.EventType.CREATE_EVENT \
                 or github_event["type"] == GithubEvent.EventType.DELETE_EVENT:
                 ref = github_event["payload"]["ref"]
