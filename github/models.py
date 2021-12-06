@@ -35,7 +35,8 @@ class GithubEvent(models.Model):
             repo_name = github_event["repo"]["name"]
             repo_url = "https://github.com/" + repo_name
             repo_md = f"[{repo_name}]({repo_url})"
-            user_md = f"[{self.username}]({self.url})"
+            user_url = self.url if "https://" in self.url else "https://" + self.url
+            user_md = f"[{self.username}]({user_url})"
             if github_event["type"] == GithubEvent.EventType.PUSH_EVENT:
                 commits = github_event["payload"]["commits"]
                 content = f"{user_md} made {len(commits)} commit(s) to repo {repo_md}: \n"
