@@ -510,7 +510,7 @@ class FollowingList(ListAPIView):
             if response.status_code == 200:
                 try:
                     possible_body = response.json()
-                    if possible_body.get('result') and not possible_body.get('result'):
+                    if not possible_body['result']:
                         response.status_code = 404
                 except Exception as e:
                     print("following list get: weird things happen when response was 200: ", e) 
