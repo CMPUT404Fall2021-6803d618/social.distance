@@ -465,7 +465,7 @@ class FollowerDetail(APIView):
         else:
             # try fetch the foreign user first, upcreate it locally and do it again.
             # TODO server2server basic auth, refactor into server2server connection pool/service
-            res = requests.get(foreign_author_url)
+            res = try_get(foreign_author_url)
             follower_serializer = AuthorSerializer(data=res.json())
         return follower_serializer
 
