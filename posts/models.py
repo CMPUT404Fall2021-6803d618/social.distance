@@ -61,7 +61,8 @@ class Post(models.Model):
 
     # used internally
     def get_absolute_url(self):
-        return reverse('post-detail', args=[str(self.author.id), str(self.id)])
+        url = reverse('post-detail', args=[str(self.author.id), str(self.id)])
+        return url[:-1] if url.endswith('/') else url # get rid of slash for url
 
     def get_image_url(self):
         return self.url.replace('/posts/', '/images/')
@@ -107,7 +108,7 @@ class Comment(models.Model):
 
     # used internally
     def get_absolute_url(self):
-        return reverse(
+        url = reverse(
             'comment-detail', 
             args=[
                 str(self.post.author.id), 
@@ -115,6 +116,7 @@ class Comment(models.Model):
                 str(self.id)
             ]
         )
+        return url[:-1] if url.endswith('/') else url # get rid of slash for url
 
     # used by serializer
     def update_fields_with_request(self, request):
