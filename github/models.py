@@ -29,12 +29,14 @@ class GithubEvent(models.Model):
     def __str__(self):
         return f"{self.username} | {self.type} | {str(self.id)}"
 
+    # create the event content based on type
     def create_event_content(self, github_event):
         try:
             repo_name = github_event["repo"]["name"]
             repo_url = "https://github.com/" + repo_name
             repo_md = f"[{repo_name}]({repo_url})"
-            user_md = f"[{self.username}]({self.url})"
+            user_url = self.url if "https://" in self.url else "https://" + self.url
+            user_md = f"[{self.username}]({user_url})"
             if github_event["type"] == GithubEvent.EventType.PUSH_EVENT:
                 commits = github_event["payload"]["commits"]
                 content = f"{user_md} made {len(commits)} commit(s) to repo {repo_md}: \n"
@@ -42,7 +44,7 @@ class GithubEvent(models.Model):
                     sha = commit["sha"]
                     message = commit["message"]
                     sha_url = commit["url"].replace("repos/", "").replace("api", "www")
-                    content += f"[{sha}]({sha_url}): {message}"
+                    content += f"[{sha}]({sha_url}): {message}  \r\n"
             elif github_event["type"] == GithubEvent.EventType.CREATE_EVENT \
                 or github_event["type"] == GithubEvent.EventType.DELETE_EVENT:
                 ref = github_event["payload"]["ref"]

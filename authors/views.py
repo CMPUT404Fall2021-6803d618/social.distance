@@ -94,7 +94,7 @@ class AuthorDetail(APIView):
         **404**: if the author id does not exist
         """
         try:
-            author = Author.objects.get(pk=author_id)
+            author = Author.objects.get(Q(pk=author_id) | Q(url=author_id))
         except Author.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
