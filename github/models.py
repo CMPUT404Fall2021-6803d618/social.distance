@@ -29,6 +29,7 @@ class GithubEvent(models.Model):
     def __str__(self):
         return f"{self.username} | {self.type} | {str(self.id)}"
 
+    # create the event content based on type
     def create_event_content(self, github_event):
         try:
             repo_name = github_event["repo"]["name"]
