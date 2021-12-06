@@ -15,6 +15,7 @@ from posts.models import Post, Like
 from posts.serializers import LikeSerializer, PostSerializer
 from nodes.models import connector_service, Node
 from posts.utils import *
+from posts.utils import try_get
 
 from .serializers import AuthorSerializer, FollowSerializer, InboxObjectSerializer
 from .pagination import *
@@ -22,7 +23,22 @@ from .models import Author, Follow, Follow, InboxObject
 
 # https://www.django-rest-framework.org/tutorial/3-class-based-views/
 
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def proxy(request, object_url):
+    """
+    [INTERNAL]
 
+    get any json from that url (use node auth) and return to frontend
+    """
+    print("proxying object: url: ", object_url)
+    res = try_get(unquote(object_url))
+    try:
+        data = res.json()
+        return Response(data)
+    except:
+        raise exceptions.ParseError("remote server response is not valid json")
+    
 class AuthorList(ListAPIView):
     serializer_class = AuthorSerializer
     pagination_class = AuthorsPagination

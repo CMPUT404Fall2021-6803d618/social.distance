@@ -18,6 +18,7 @@ from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from authors.views import proxy
 
 from posts.views import get_all_posts
 
@@ -35,7 +36,7 @@ urlpatterns = [
     # authors app
     path('authors/', include('authors.urls_authors')),
     path('author/', include('authors.urls_author')),
-    path('foreign-authors/', include('authors.urls_foreign')),
+    path('proxy/<path:object_url>/', proxy, name='social-proxy'),
 
     path('posts/', get_all_posts, name='all-posts'),
 
