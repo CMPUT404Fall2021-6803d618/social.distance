@@ -164,6 +164,9 @@ class ConnectorService:
             del data["inbox_object"]
         if "status" in data:
             del data["status"]    
+        if data.get('type', '').lower() == 'post':
+            data['categories'] = ['post']
+
         response = global_session.post(inbox_url, json=data, auth=node.get_basic_auth())
         print("request_url: ", inbox_url)
         print("data:", data)
